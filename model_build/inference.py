@@ -1,0 +1,104 @@
+import json
+import logging
+import os
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+log_level = os.environ.get("LOGLEVEL", "INFO").upper()
+logging.basicConfig(level=log_level)
+logger = logging.getLogger(__name__)
+
+def model_fn(model_dir, context=None):
+    """
+    Load the model and tokenizer from the model_dir.
+    """
+    logger.info("--- Starting model_fn ---")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.info(f"Using device: {device}")
+    
+    logger.info("Loading model from pretrained...")
+    model = AutoModelForCausalLM.from_pretrained(model_dir, torch_dtype=torch.bfloat16)
+    logger.info("Model loaded. Moving to device...")
+    model.to(device)
+    model.eval()
+    logger.info("Model moved to device and set to eval mode.")
+    
+    logger.info("Loading tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    tokenizer.pad_token = tokenizer.eos_token
+    logger.info("--- model_fn complete ---")
+    
+    return {"model": model, "tokenizer": tokenizer}
+
+def input_fn(request_body, request_content_type):
+    """
+    Parse the request body.
+    """
+    logger.info("--- Starting input_fn ---")
+    assert request_content_type == "application/json"
+    
+    logger.debug("Parsing request body...")
+    data = json.loads(request_body)
+    logger.debug(f"Parsed data: {data}")
+    
+    inputs = data.get("inputs")
+    if inputs is None:
+        raise ValueError("Request JSON must contain a 'inputs' field.")
+    logger.debug(f"Extracted inputs: {inputs}")
+        
+    parameters = data.get("parameters", {})
+    logger.debug(f"Extracted parameters: {parameters}")
+    
+    logger.info("--- input_fn complete ---")
+    return {"inputs": inputs, "parameters": parameters}
+
+def predict_fn(input_data, model_dict):
+    """
+    Run prediction on the processed input data.
+    """
+    logger.info("--- Starting predict_fn ---")
+    model = model_dict["model"]
+    tokenizer = model_dict["tokenizer"]
+    device = model.device
+
+    inputs = input_data["inputs"]
+    parameters = input_data["parameters"]
+    logger.info(f"Received {len(inputs)} inputs for prediction.")
+
+    logger.debug("Tokenizing inputs...")
+    inputs = tokenizer(
+        text=inputs, 
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=parameters.get("max_tokenization_length", 512),
+    )
+    parameters.pop("max_tokenization_length", None)
+    logger.debug("Tokenization complete. Moving inputs to device...")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    logger.debug(f"Inputs moved to device. Input shape: {inputs['input_ids'].shape}")
+    
+    logger.info("Starting model.generate()...")
+    with torch.no_grad():
+        outputs = model.generate(**inputs, **parameters, pad_token_id=tokenizer.eos_token_id)
+    logger.info("model.generate() complete.")
+        
+    logger.debug("Decoding responses...")
+    input_ids_len = inputs["input_ids"].shape[-1]
+    responses = tokenizer.batch_decode(outputs[:, input_ids_len:], skip_special_tokens=True)
+    logger.debug(f"Decoded {len(responses)} responses.")
+    
+    logger.info("--- predict_fn complete ---")
+    return {"responses": responses}
+
+def output_fn(prediction, response_content_type):
+    """
+    Serialize the prediction result into the desired response format.
+    """
+    logger.info("--- Starting output_fn ---")
+    assert response_content_type == "application/json"
+    
+    logger.debug("Serializing prediction...")
+    output = json.dumps(prediction)
+    logger.info("--- output_fn complete ---")
+    return output 

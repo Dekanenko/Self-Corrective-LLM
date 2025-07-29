@@ -1,0 +1,222 @@
+[
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "What percentage of Egyptians polled support death penalty for those leaving Islam?",
+            "context": "The Pew Forum on Religion & Public Life ranks Egypt as the fifth worst country in the world for religious freedom. The United States Commission on International Religious Freedom, a bipartisan independent agency of the US government, has placed Egypt on its watch list of countries that require close monitoring due to the nature and extent of violations of religious freedom engaged in or tolerated by the government. According to a 2010 Pew Global Attitudes survey, 84% of Egyptians polled supported the death penalty for those who leave Islam; 77% supported whippings and cutting off of hands for theft and robbery; and 82% support stoning a person who commits adultery.",
+            "answer": [
+                "84%"
+            ],
+            "title": "Egypt"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe Pew Forum on Religion & Public Life ranks Egypt as the fifth worst country in the world for religious freedom. The United States Commission on International Religious Freedom, a bipartisan independent agency of the US government, has placed Egypt on its watch list of countries that require close monitoring due to the nature and extent of violations of religious freedom engaged in or tolerated by the government. According to a 2010 Pew Global Attitudes survey, 84% of Egyptians polled supported the death penalty for those who leave Islam; 77% supported whippings and cutting off of hands for theft and robbery; and 82% support stoning a person who commits adultery.\n'''\n\nQuestion: What percentage of Egyptians polled support death penalty for those leaving Islam?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "84%",
+            "84%",
+            "84%",
+            "84%"
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "Ann Arbor ranks 1st among what goods sold?",
+            "context": "The Ann Arbor Hands-On Museum is located in a renovated and expanded historic downtown fire station. Multiple art galleries exist in the city, notably in the downtown area and around the University of Michigan campus. Aside from a large restaurant scene in the Main Street, South State Street, and South University Avenue areas, Ann Arbor ranks first among U.S. cities in the number of booksellers and books sold per capita. The Ann Arbor District Library maintains four branch outlets in addition to its main downtown building. The city is also home to the Gerald R. Ford Presidential Library.",
+            "answer": [
+                "books"
+            ],
+            "title": "Ann_Arbor,_Michigan"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe Ann Arbor Hands-On Museum is located in a renovated and expanded historic downtown fire station. Multiple art galleries exist in the city, notably in the downtown area and around the University of Michigan campus. Aside from a large restaurant scene in the Main Street, South State Street, and South University Avenue areas, Ann Arbor ranks first among U.S. cities in the number of booksellers and books sold per capita. The Ann Arbor District Library maintains four branch outlets in addition to its main downtown building. The city is also home to the Gerald R. Ford Presidential Library.\n'''\n\nQuestion: Ann Arbor ranks 1st among what goods sold?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "Ann Arbor ranks 1st among books.",
+            "Ann Arbor ranks 1st among books.",
+            "Ann Arbor ranks 1st among books.",
+            "Ann Arbor ranks 1st among books."
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "In developing countries, who makes most of the spending decisions?",
+            "context": "One important aspect of the rule-of-law initiatives is the study and analysis of the rule of law\u2019s impact on economic development. The rule-of-law movement cannot be fully successful in transitional and developing countries without an answer to the question: does the rule of law matter for economic development or not? Constitutional economics is the study of the compatibility of economic and financial decisions within existing constitutional law frameworks, and such a framework includes government spending on the judiciary, which, in many transitional and developing countries, is completely controlled by the executive. It is useful to distinguish between the two methods of corruption of the judiciary: corruption by the executive branch, in contrast to corruption by private actors.",
+            "answer": [
+                "the executive"
+            ],
+            "title": "Rule_of_law"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nOne important aspect of the rule-of-law initiatives is the study and analysis of the rule of law\u2019s impact on economic development. The rule-of-law movement cannot be fully successful in transitional and developing countries without an answer to the question: does the rule of law matter for economic development or not? Constitutional economics is the study of the compatibility of economic and financial decisions within existing constitutional law frameworks, and such a framework includes government spending on the judiciary, which, in many transitional and developing countries, is completely controlled by the executive. It is useful to distinguish between the two methods of corruption of the judiciary: corruption by the executive branch, in contrast to corruption by private actors.\n'''\n\nQuestion: In developing countries, who makes most of the spending decisions?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "The executive branch.",
+            "The executive branch of the government.",
+            "Executive branch.",
+            "In developing countries, the government, specifically the executive branch, makes most of the spending decisions on the judiciary."
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "Who impressed Xavier by taking notes in church?",
+            "context": "In December 1547, Francis was in Malacca (Malaysia) waiting to return to Goa (India) when he met a low-ranked samurai named Anjiro (possibly spelled \"Yajiro\"). Anjiro was not an intellectual, but he impressed Xavier because he took careful notes of everything he said in church. Xavier made the decision to go to Japan in part because this low-ranking samurai convinced him in Portuguese that the Japanese people were highly educated and eager to learn. They were hard workers and respectful of authority. In their laws and customs they were led by reason, and, should the Christian faith convince them of its truth, they would accept it en masse.",
+            "answer": [
+                "Anjiro"
+            ],
+            "title": "Samurai"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nIn December 1547, Francis was in Malacca (Malaysia) waiting to return to Goa (India) when he met a low-ranked samurai named Anjiro (possibly spelled \"Yajiro\"). Anjiro was not an intellectual, but he impressed Xavier because he took careful notes of everything he said in church. Xavier made the decision to go to Japan in part because this low-ranking samurai convinced him in Portuguese that the Japanese people were highly educated and eager to learn. They were hard workers and respectful of authority. In their laws and customs they were led by reason, and, should the Christian faith convince them of its truth, they would accept it en masse.\n'''\n\nQuestion: Who impressed Xavier by taking notes in church?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "Francis Xavier impressed Xavier by taking notes in church.",
+            "Anjiro.",
+            "Anjiro.",
+            "Anjiro (possibly spelled \"Yajiro\"), a low-ranked samurai."
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "What represents elements of the fundamental group?",
+            "context": "Groups are also applied in many other mathematical areas. Mathematical objects are often examined by associating groups to them and studying the properties of the corresponding groups. For example, Henri Poincar\u00e9 founded what is now called algebraic topology by introducing the fundamental group. By means of this connection, topological properties such as proximity and continuity translate into properties of groups.i[\u203a] For example, elements of the fundamental group are represented by loops. The second image at the right shows some loops in a plane minus a point. The blue loop is considered null-homotopic (and thus irrelevant), because it can be continuously shrunk to a point. The presence of the hole prevents the orange loop from being shrunk to a point. The fundamental group of the plane with a point deleted turns out to be infinite cyclic, generated by the orange loop (or any other loop winding once around the hole). This way, the fundamental group detects the hole.",
+            "answer": [
+                "loops"
+            ],
+            "title": "Group_(mathematics)"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nGroups are also applied in many other mathematical areas. Mathematical objects are often examined by associating groups to them and studying the properties of the corresponding groups. For example, Henri Poincar\u00e9 founded what is now called algebraic topology by introducing the fundamental group. By means of this connection, topological properties such as proximity and continuity translate into properties of groups.i[\u203a] For example, elements of the fundamental group are represented by loops. The second image at the right shows some loops in a plane minus a point. The blue loop is considered null-homotopic (and thus irrelevant), because it can be continuously shrunk to a point. The presence of the hole prevents the orange loop from being shrunk to a point. The fundamental group of the plane with a point deleted turns out to be infinite cyclic, generated by the orange loop (or any other loop winding once around the hole). This way, the fundamental group detects the hole.\n'''\n\nQuestion: What represents elements of the fundamental group?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "Loops",
+            "Loops.",
+            "Loops.",
+            "Loops."
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "What is the population of the Commonwealth?",
+            "context": "Most former British colonies and protectorates are among the 53 member states of the Commonwealth of Nations, a non-political, voluntary association of equal members, comprising a population of around 2.2 billion people. Sixteen Commonwealth realms voluntarily continue to share the British monarch, Queen Elizabeth II, as their head of state. These sixteen nations are distinct and equal legal entities \u2013 the United Kingdom, Australia, Canada, New Zealand, Papua New Guinea, Antigua and Barbuda, The Bahamas, Barbados, Belize, Grenada, Jamaica, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, Solomon Islands and Tuvalu.",
+            "answer": [
+                "2.2 billion"
+            ],
+            "title": "British_Empire"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nMost former British colonies and protectorates are among the 53 member states of the Commonwealth of Nations, a non-political, voluntary association of equal members, comprising a population of around 2.2 billion people. Sixteen Commonwealth realms voluntarily continue to share the British monarch, Queen Elizabeth II, as their head of state. These sixteen nations are distinct and equal legal entities \u2013 the United Kingdom, Australia, Canada, New Zealand, Papua New Guinea, Antigua and Barbuda, The Bahamas, Barbados, Belize, Grenada, Jamaica, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, Solomon Islands and Tuvalu.\n'''\n\nQuestion: What is the population of the Commonwealth?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion"
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "What was Eisenhower's title after Germany's surrender?",
+            "context": "Following the German unconditional surrender, Eisenhower was appointed Military Governor of the U.S. Occupation Zone, based at the IG Farben Building in Frankfurt am Main. He had no responsibility for the other three zones, controlled by Britain, France and the Soviet Union, except for the city of Berlin, which was managed by the Four-Power Authorities through the Allied Kommandatura as the governing body. Upon discovery of the Nazi concentration camps, he ordered camera crews to document evidence of the atrocities in them for use in the Nuremberg Trials. He reclassified German prisoners of war (POWs) in U.S. custody as Disarmed Enemy Forces (DEFs), who were no longer subject to the Geneva Convention. Eisenhower followed the orders laid down by the Joint Chiefs of Staff (JCS) in directive JCS 1067, but softened them by bringing in 400,000 tons of food for civilians and allowing more fraternization. In response to the devastation in Germany, including food shortages and an influx of refugees, he arranged distribution of American food and medical equipment. His actions reflected the new American attitudes of the German people as Nazi victims not villains, while aggressively purging the ex-Nazis.",
+            "answer": [
+                "Military Governor of the U.S. Occupation Zone"
+            ],
+            "title": "Dwight_D._Eisenhower"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nFollowing the German unconditional surrender, Eisenhower was appointed Military Governor of the U.S. Occupation Zone, based at the IG Farben Building in Frankfurt am Main. He had no responsibility for the other three zones, controlled by Britain, France and the Soviet Union, except for the city of Berlin, which was managed by the Four-Power Authorities through the Allied Kommandatura as the governing body. Upon discovery of the Nazi concentration camps, he ordered camera crews to document evidence of the atrocities in them for use in the Nuremberg Trials. He reclassified German prisoners of war (POWs) in U.S. custody as Disarmed Enemy Forces (DEFs), who were no longer subject to the Geneva Convention. Eisenhower followed the orders laid down by the Joint Chiefs of Staff (JCS) in directive JCS 1067, but softened them by bringing in 400,000 tons of food for civilians and allowing more fraternization. In response to the devastation in Germany, including food shortages and an influx of refugees, he arranged distribution of American food and medical equipment. His actions reflected the new American attitudes of the German people as Nazi victims not villains, while aggressively purging the ex-Nazis.\n'''\n\nQuestion: What was Eisenhower's title after Germany's surrender?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "After Germany's unconditional surrender, Eisenhower was appointed as the Military Governor of the U.S. Occupation Zone, based at the IG Farben Building in Frankfurt am Main.",
+            "General Dwight D. Eisenhower",
+            "Military Governor",
+            "Eisenhower was appointed Military Governor of the U.S. Occupation Zone."
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "These regions were occupied by who?",
+            "context": "These regions were occupied by \"the brown men,\" with the yellow in the Far East and the black in Africa. The color issue was not settled until Kenya became independent in 1963, ending the last vestige of the British Empire.",
+            "answer": [
+                "the brown men"
+            ],
+            "title": "Near_East"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThese regions were occupied by \"the brown men,\" with the yellow in the Far East and the black in Africa. The color issue was not settled until Kenya became independent in 1963, ending the last vestige of the British Empire.\n'''\n\nQuestion: These regions were occupied by who?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "The brown men.",
+            "\"The brown men\"",
+            "The brown men.",
+            "The yellow"
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "What could be done by understanding how the disease was transmitted?",
+            "context": "There is usually an indication for a specific identification of an infectious agent only when such identification can aid in the treatment or prevention of the disease, or to advance knowledge of the course of an illness prior to the development of effective therapeutic or preventative measures. For example, in the early 1980s, prior to the appearance of AZT for the treatment of AIDS, the course of the disease was closely followed by monitoring the composition of patient blood samples, even though the outcome would not offer the patient any further treatment options. In part, these studies on the appearance of HIV in specific communities permitted the advancement of hypotheses as to the route of transmission of the virus. By understanding how the disease was transmitted, resources could be targeted to the communities at greatest risk in campaigns aimed at reducing the number of new infections. The specific serological diagnostic identification, and later genotypic or molecular identification, of HIV also enabled the development of hypotheses as to the temporal and geographical origins of the virus, as well as a myriad of other hypothesis. The development of molecular diagnostic tools have enabled physicians and researchers to monitor the efficacy of treatment with anti-retroviral drugs. Molecular diagnostics are now commonly used to identify HIV in healthy people long before the onset of illness and have been used to demonstrate the existence of people who are genetically resistant to HIV infection. Thus, while there still is no cure for AIDS, there is great therapeutic and predictive benefit to identifying the virus and monitoring the virus levels within the blood of infected individuals, both for the patient and for the community at large.",
+            "answer": [
+                "resources could be targeted to the communities at greatest risk"
+            ],
+            "title": "Infection"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThere is usually an indication for a specific identification of an infectious agent only when such identification can aid in the treatment or prevention of the disease, or to advance knowledge of the course of an illness prior to the development of effective therapeutic or preventative measures. For example, in the early 1980s, prior to the appearance of AZT for the treatment of AIDS, the course of the disease was closely followed by monitoring the composition of patient blood samples, even though the outcome would not offer the patient any further treatment options. In part, these studies on the appearance of HIV in specific communities permitted the advancement of hypotheses as to the route of transmission of the virus. By understanding how the disease was transmitted, resources could be targeted to the communities at greatest risk in campaigns aimed at reducing the number of new infections. The specific serological diagnostic identification, and later genotypic or molecular identification, of HIV also enabled the development of hypotheses as to the temporal and geographical origins of the virus, as well as a myriad of other hypothesis. The development of molecular diagnostic tools have enabled physicians and researchers to monitor the efficacy of treatment with anti-retroviral drugs. Molecular diagnostics are now commonly used to identify HIV in healthy people long before the onset of illness and have been used to demonstrate the existence of people who are genetically resistant to HIV infection. Thus, while there still is no cure for AIDS, there is great therapeutic and predictive benefit to identifying the virus and monitoring the virus levels within the blood of infected individuals, both for the patient and for the community at large.\n'''\n\nQuestion: What could be done by understanding how the disease was transmitted?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "The disease that was studied in the context of this passage is HIV. Understanding how the disease was transmitted allowed researchers to:\n\n1. Targeted the communities at greatest risk in campaigns aimed at reducing the number of new infections\n2. Monitor the efficacy of treatment with anti-retroviral drugs\n3. Identify people who are genetically resistant to HIV infection",
+            "To understand how the disease was transmitted, it could have allowed targeted efforts to be made to reduce the number of new infections, particularly in communities at greatest risk.",
+            "The disease that could be advanced by understanding how it was transmitted is AIDS (Acquired Immunodeficiency Syndrome).",
+            "By understanding how the disease was transmitted, resources could be targeted to the communities at greatest risk in campaigns aimed at reducing the number of new infections."
+        ]
+    },
+    {
+        "task_info": {
+            "type": "Contextual QA",
+            "dataset": "rajpurkar_squad"
+        },
+        "additional_info": {
+            "model": "meta-llama/Llama-3.2-1B-Instruct",
+            "question": "What kind of ants are symbolic among the Australian Aborigines?",
+            "context": "Scarab beetles held religious and cultural symbolism in Old Egypt, Greece and some shamanistic Old World cultures. The ancient Chinese regarded cicadas as symbols of rebirth or immortality. In Mesopotamian literature, the epic poem of Gilgamesh has allusions to Odonata which signify the impossibility of immortality. Amongst the Aborigines of Australia of the Arrernte language groups, honey ants and witchety grubs served as personal clan totems. In the case of the 'San' bush-men of the Kalahari, it is the praying mantis which holds much cultural significance including creation and zen-like patience in waiting.:9",
+            "answer": [
+                "honey ants"
+            ],
+            "title": "Insect"
+        },
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nScarab beetles held religious and cultural symbolism in Old Egypt, Greece and some shamanistic Old World cultures. The ancient Chinese regarded cicadas as symbols of rebirth or immortality. In Mesopotamian literature, the epic poem of Gilgamesh has allusions to Odonata which signify the impossibility of immortality. Amongst the Aborigines of Australia of the Arrernte language groups, honey ants and witchety grubs served as personal clan totems. In the case of the 'San' bush-men of the Kalahari, it is the praying mantis which holds much cultural significance including creation and zen-like patience in waiting.:9\n'''\n\nQuestion: What kind of ants are symbolic among the Australian Aborigines?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "response": [
+            "The praying mantis is symbolic among the Australian Aborigines of the Arrernte language groups, representing creation and zen-like patience in waiting.",
+            "Honey ants.",
+            "Honey ants.",
+            "Honey ants."
+        ]
+    }
+]

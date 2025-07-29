@@ -1,0 +1,16 @@
+langchain == 0.3.26
+langchain-core == 0.3.68
+langchain-community == 0.3.27 
+langchain-google-genai == 2.1.7 
+langchain-google-community == 2.0.7
+langgraph == 0.5.3
+transformers == 4.43.3
+datasets == 2.19.2
+pyarrow == 17.0.0
+loguru == 0.7.2
+pydantic == 2.8.2
+tqdm == 4.66.4
+torch == 2.4.0
+python-dotenv == 1.0.1
+ipykernel == 6.29.5
+jupyter
