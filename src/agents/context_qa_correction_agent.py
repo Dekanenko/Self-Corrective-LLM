@@ -19,16 +19,13 @@ class ContextQACorrectionAgent:
             correction_model_name: str = "gemini-2.0-flash", 
             error_check_temperature: float = 0.2, 
             correction_temperature: float = 0.3, 
-            estimate_only: bool = False,
-            max_errors_to_correct: int = 3,
-            retry_count: int = 3,
+            error_detection_only: bool = False,
+            max_responses_to_correct: int = 3,
     ):
         self.error_check_llm = ChatGoogleGenerativeAI(model=error_check_model_name, temperature=error_check_temperature)
         self.correction_llm = ChatGoogleGenerativeAI(model=correction_model_name, temperature=correction_temperature)
-        self.estimate_only = estimate_only
-        self.max_errors_to_correct = max_errors_to_correct
-        self.error_number = 0
-        self.retry_count = retry_count
+        self.error_detection_only = error_detection_only
+        self.max_responses_to_correct = max_responses_to_correct
 
         self.model = self._build_graph().compile()
     
@@ -76,52 +73,46 @@ class ContextQACorrectionAgent:
         ]
   
         chain = self.error_check_llm | parser
-
-        while self.retry_count > 0:
-            try:
-                detected_errors = chain.batch(prompts)
-            except Exception as e:
-                logger.error(f"Error in ContextQACorrectionAgent: {e}")
-                self.retry_count -= 1
-                detected_errors = []
-                continue
-            break
+        result = chain.batch(prompts, return_exceptions=True)
         
         errors = []
-        for error_list in detected_errors:
-            errors.append(error_list.errors)
+        wrong_response_number = 0
+        responses = []
+        for i in range(len(result)):
+            if not isinstance(result[i], Exception):
+                error_list = [err.dict() for err in result[i].errors]
+                errors.append(error_list)
+                responses.append(response_batch[i])
+                wrong_response_number += 1 if result[i].errors else 0
 
         logger.info(f"Errors: {errors}")
+        logger.info(f"Wrong responses: {wrong_response_number}")
 
         state["errors"] = errors
+        state["wrong_response_number"] = wrong_response_number
+        state["responses"] = responses
         return state
     
     def should_correct(self, state: ContextQACorrectionState) -> bool:
-        if self.estimate_only:
+        if self.error_detection_only:
             return False
-        
-        errors = state["errors"]
-        for error in errors:
-            if error != []:
-                self.error_number += 1
-        
-        logger.info(f"Error number: {self.error_number}")
     
         # return bool(self.error_number) and self.error_number < len(errors)
-        return bool(self.error_number)
+        return bool(state["wrong_response_number"])
     
     def get_errors_to_correct(self, state: ContextQACorrectionState) -> ContextQACorrectionState:
         errors = state["errors"]
+        wrong_response_number = state["wrong_response_number"]
         responses = state["responses"]
-        num_errors_to_correct = min(self.error_number, self.max_errors_to_correct)
+        num_responses_to_correct = min(wrong_response_number, self.max_responses_to_correct)
 
         zipped_lists = zip(errors, responses)
         sorted_pairs = sorted(zipped_lists, key=lambda pair: len(pair[0]), reverse=True)
-        truncated_pairs = sorted_pairs[:num_errors_to_correct]
+        truncated_pairs = sorted_pairs[:num_responses_to_correct]
         errors, responses = zip(*truncated_pairs)
 
-        state["errors"] = errors
-        state["responses"] = responses
+        state["errors_to_correct"] = errors
+        state["responses_to_correct"] = responses
 
         logger.info(f"Errors to correct: {errors}")
         logger.info(f"Responses to correct: {responses}")
@@ -132,8 +123,8 @@ class ContextQACorrectionAgent:
         question = state["question"]
         context = state["context"]
         answer = state["answer"]
-        response_batch = state["responses"]
-        errors = state["errors"]
+        response_batch = state["responses_to_correct"]
+        errors = state["errors_to_correct"]
 
         prompt = ContextQAErrorCorrectionPrompt(input_variables=[
             "question", "context", "answer", 
@@ -160,7 +151,7 @@ class ContextQACorrectionAgent:
             logger.error(f"Error in ContextQACorrectionAgent: {e}")
         
         logger.info(f"Corrected responses: {corrected_responses}")
-
+        # corrected_responses = [res.replace("[DELETE_WORD]", "<DEL_W>").replace("[DELETE_SENTENCE]", "<DEL_S>").replace("[DELETE_ALL]", "<DEL_A>") for res in corrected_responses]
         state["corrected_responses"] = [ensure_space_after_del_tokens(res) for res in corrected_responses]
         return state
 
@@ -201,11 +192,8 @@ class ContextQACorrectionAgent:
         """Filters responses and errors, keeping only those marked as verified."""
         responses = state["corrected_responses"]
         mask = state["verified_response_mask"]
-        errors = state["errors"]
-
+        
         state["corrected_responses"] = [
             response for response, verified in zip(responses, mask) if verified
         ]
-        state["errors"] = [error for error, verified in zip(errors, mask) if verified]
-
         return state

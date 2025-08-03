@@ -15,12 +15,12 @@ def ensure_space_after_del_tokens(text: str) -> str:
 
 def apply_del_tokens(text: str) -> str:
     text = ensure_space_after_del_tokens(text)
-    text = text.replace('\n', '. ')
-    words = text.split()
-    i = 0
+    text = text.replace('\n\n', '\n').replace('\n', ' \n ')
+    words = text.split(' ')
     # A small, maintainable set of common titles that end with a period.
     known_titles = {"Mr.", "Mrs.", "Ms.", "Dr.", "Prof.", "St.", "Inc."}
 
+    i = 0
     while i < len(words):
         if "<DEL_A>" in words[i]:
             words = words[i+1:]
@@ -33,8 +33,8 @@ def apply_del_tokens(text: str) -> str:
             for j in range(i - 1, -1, -1):
                 word = words[j]
                 
-                # A sentence definitely ends with '?' or '!'
-                if word.endswith(('?', '!')):
+                # A sentence definitely ends with '?' or '!' or a newline
+                if word.endswith(('?', '!')) or word == '\n':
                     start_of_sentence = j + 1
                     break
 
@@ -85,8 +85,17 @@ def apply_del_tokens(text: str) -> str:
         if words[i].lower() != cleaned_words[-1].lower():
             cleaned_words.append(words[i])
 
-    return ' '.join(cleaned_words)
+    # Re-join the words, converting newline tokens back to actual newlines.
+    final_text = ' '.join(cleaned_words)
+    return final_text.replace(' \n ', '\n')
 
 
-def format_errors(errors: list[Error]) -> str:
-    return "\n\n".join([f"Error: {error.error_description}\nError Location: {error.error_location}\nHow to fix the error: {error.error_correction}\n" for error in errors])
+def format_errors(errors: list[dict]) -> str:
+    errors_str = ""
+    for i, error in enumerate(errors):
+        errors_str += f"Error {i+1}:\n"
+        errors_str += f"Error Description: {error['description']}\n"
+        errors_str += f"Error Location: {error['location']}\n"
+        errors_str += f"How to fix the error: {error['correction']}\n\n"
+
+    return errors_str
