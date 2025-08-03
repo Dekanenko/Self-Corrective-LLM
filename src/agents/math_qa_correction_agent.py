@@ -19,16 +19,13 @@ class MathQACorrectionAgent:
             correction_model_name: str = "gemini-2.0-flash", 
             error_check_temperature: float = 0.2, 
             correction_temperature: float = 0.3, 
-            estimate_only: bool = False,
-            max_errors_to_correct: int = 3,
-            retry_count: int = 3,
+            error_detection_only: bool = False,
+            max_responses_to_correct: int = 3,
     ):
         self.error_check_llm = ChatGoogleGenerativeAI(model=error_check_model_name, temperature=error_check_temperature)
         self.correction_llm = ChatGoogleGenerativeAI(model=correction_model_name, temperature=correction_temperature)
-        self.estimate_only = estimate_only
-        self.max_errors_to_correct = max_errors_to_correct
-        self.error_number = 0
-        self.retry_count = retry_count
+        self.error_detection_only = error_detection_only
+        self.max_responses_to_correct = max_responses_to_correct
 
         self.model = self._build_graph().compile()
     
@@ -56,6 +53,9 @@ class MathQACorrectionAgent:
         answer = state["answer"]
         is_answerable = state["is_answerable"]
         response_batch = state["responses"]
+        self.error_number = 0
+
+        print(f"Response len: {len(response_batch)}")
 
         parser = PydanticOutputParser(pydantic_object=ErrorList)
         prompt = MathQAErrorCheckPrompt(input_variables=[
@@ -77,51 +77,67 @@ class MathQACorrectionAgent:
   
         chain = self.error_check_llm | parser
 
-        while self.retry_count > 0:
-            try:
-                detected_errors = chain.batch(prompts)
-            except Exception as e:
-                logger.error(f"Error in MathQACorrectionAgent: {e}")
-                self.retry_count -= 1
-                detected_errors = []
-                continue
-            break
+        # while self.retry_count > 0:
+        #     try:
+        #         # detected_errors = chain.batch(prompts)
+        #         detected_errors = chain.batch(prompts, return_exceptions=True)
+        #         print(detected_errors)
+        #     except Exception as e:
+        #         logger.error(f"Error in MathQACorrectionAgent: {e}")
+        #         self.retry_count -= 1
+        #         detected_errors = []
+        #         continue
+        #     break
+
+        result = chain.batch(prompts, return_exceptions=True)
         
         errors = []
-        for error in detected_errors:
-            errors.append(error.errors)
+        wrong_response_number = 0
+        responses = []
+        for i in range(len(result)):
+            if not isinstance(result[i], Exception):
+                error_list = [err.dict() for err in result[i].errors]
+                errors.append(error_list)
+                responses.append(response_batch[i])
+                wrong_response_number += 1 if result[i].errors else 0
 
         logger.info(f"Errors: {errors}")
+        logger.info(f"Wrong responses: {wrong_response_number}")
 
         state["errors"] = errors
+        state["wrong_response_number"] = wrong_response_number
+        state["responses"] = responses
         return state
     
     def should_correct(self, state: MathQACorrectionState) -> bool:
-        if self.estimate_only:
+        if self.error_detection_only:
             return False
         
-        errors = state["errors"]
-        for error in errors:
-            if error != []:
-                self.error_number += 1
+        # errors = state["errors"]
+        # error_number = 0
+        # for error in errors:
+        #     if error != []:
+        #         error_number += 1
         
-        logger.info(f"Error number: {self.error_number}")
+        # logger.info(f"Error number: {error_number}")
+        # state["error_number"] = error_number
 
         # return bool(self.error_number) and self.error_number < len(errors)
-        return bool(self.error_number)
+        return bool(state["wrong_response_number"])
     
     def get_errors_to_correct(self, state: MathQACorrectionState) -> MathQACorrectionState:
         errors = state["errors"]
+        wrong_response_number = state["wrong_response_number"]
         responses = state["responses"]
-        num_errors_to_correct = min(self.error_number, self.max_errors_to_correct)
+        num_responses_to_correct = min(wrong_response_number, self.max_responses_to_correct)
 
         zipped_lists = zip(errors, responses)
         sorted_pairs = sorted(zipped_lists, key=lambda pair: len(pair[0]), reverse=True)
-        truncated_pairs = sorted_pairs[:num_errors_to_correct]
+        truncated_pairs = sorted_pairs[:num_responses_to_correct]
         errors, responses = zip(*truncated_pairs)
 
-        state["errors"] = errors
-        state["responses"] = responses
+        state["errors_to_correct"] = errors
+        state["responses_to_correct"] = responses
 
         logger.info(f"Errors to correct: {errors}")
         logger.info(f"Responses to correct: {responses}")
@@ -132,8 +148,8 @@ class MathQACorrectionAgent:
         question = state["question"]
         answer = state["answer"]
         is_answerable = state["is_answerable"]
-        response_batch = state["responses"]
-        errors = state["errors"]
+        response_batch = state["responses_to_correct"]
+        errors = state["errors_to_correct"]
 
         prompt = MathQAErrorCorrectionPrompt(input_variables=[
             "question", "answer", "is_answerable", 
@@ -202,11 +218,11 @@ class MathQACorrectionAgent:
         """Filters responses and errors, keeping only those marked as verified."""
         responses = state["corrected_responses"]
         mask = state["verified_response_mask"]
-        errors = state["errors"]
+        # errors = state["errors_to_correct"]
 
         state["corrected_responses"] = [
             response for response, verified in zip(responses, mask) if verified
         ]
-        state["errors"] = [error for error, verified in zip(errors, mask) if verified]
+        # state["errors_to_correct"] = [error for error, verified in zip(errors, mask) if verified]
 
         return state
