@@ -76,19 +76,6 @@ class MathQACorrectionAgent:
         ]
   
         chain = self.error_check_llm | parser
-
-        # while self.retry_count > 0:
-        #     try:
-        #         # detected_errors = chain.batch(prompts)
-        #         detected_errors = chain.batch(prompts, return_exceptions=True)
-        #         print(detected_errors)
-        #     except Exception as e:
-        #         logger.error(f"Error in MathQACorrectionAgent: {e}")
-        #         self.retry_count -= 1
-        #         detected_errors = []
-        #         continue
-        #     break
-
         result = chain.batch(prompts, return_exceptions=True)
         
         errors = []
@@ -112,15 +99,6 @@ class MathQACorrectionAgent:
     def should_correct(self, state: MathQACorrectionState) -> bool:
         if self.error_detection_only:
             return False
-        
-        # errors = state["errors"]
-        # error_number = 0
-        # for error in errors:
-        #     if error != []:
-        #         error_number += 1
-        
-        # logger.info(f"Error number: {error_number}")
-        # state["error_number"] = error_number
 
         # return bool(self.error_number) and self.error_number < len(errors)
         return bool(state["wrong_response_number"])
@@ -218,11 +196,8 @@ class MathQACorrectionAgent:
         """Filters responses and errors, keeping only those marked as verified."""
         responses = state["corrected_responses"]
         mask = state["verified_response_mask"]
-        # errors = state["errors_to_correct"]
 
         state["corrected_responses"] = [
             response for response, verified in zip(responses, mask) if verified
         ]
-        # state["errors_to_correct"] = [error for error, verified in zip(errors, mask) if verified]
-
         return state

@@ -90,18 +90,6 @@ def apply_del_tokens(text: str) -> str:
     return final_text.replace(' \n ', '\n')
 
 
-# def format_errors(errors: list[Error]) -> str:
-#     errors_str = ""
-#     for i, error in enumerate(errors):
-#         errors_str += f"Error {i+1}:\n"
-#         errors_str += f"Error Description: {error.description}\n"
-#         errors_str += f"Error Location: {error.location}\n"
-#         errors_str += f"How to fix the error: {error.correction}\n\n"
-
-#     return errors_str
-    # return "\n\n".join([f"Error: {error.description}\nError Location: {error.location}\nHow to fix the error: {error.correction}\n" for error in errors])
-
-
 def format_errors(errors: list[dict]) -> str:
     errors_str = ""
     for i, error in enumerate(errors):

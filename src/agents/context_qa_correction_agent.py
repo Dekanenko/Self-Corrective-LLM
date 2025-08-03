@@ -73,21 +73,6 @@ class ContextQACorrectionAgent:
         ]
   
         chain = self.error_check_llm | parser
-
-        # while self.retry_count > 0:
-        #     try:
-        #         detected_errors = chain.batch(prompts)
-        #     except Exception as e:
-        #         logger.error(f"Error in ContextQACorrectionAgent: {e}")
-        #         self.retry_count -= 1
-        #         detected_errors = []
-        #         continue
-        #     break
-        
-        # errors = []
-        # for error_list in detected_errors:
-        #     errors.append(error_list.errors)
-
         result = chain.batch(prompts, return_exceptions=True)
         
         errors = []
@@ -111,13 +96,6 @@ class ContextQACorrectionAgent:
     def should_correct(self, state: ContextQACorrectionState) -> bool:
         if self.error_detection_only:
             return False
-        
-        # errors = state["errors"]
-        # for error in errors:
-        #     if error != []:
-        #         self.error_number += 1
-        
-        # logger.info(f"Error number: {self.error_number}")
     
         # return bool(self.error_number) and self.error_number < len(errors)
         return bool(state["wrong_response_number"])
@@ -214,11 +192,8 @@ class ContextQACorrectionAgent:
         """Filters responses and errors, keeping only those marked as verified."""
         responses = state["corrected_responses"]
         mask = state["verified_response_mask"]
-        # errors = state["errors_to_correct"]
-
+        
         state["corrected_responses"] = [
             response for response, verified in zip(responses, mask) if verified
         ]
-        # state["errors_to_correct"] = [error for error, verified in zip(errors, mask) if verified]
-
         return state
