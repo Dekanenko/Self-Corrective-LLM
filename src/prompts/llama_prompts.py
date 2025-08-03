@@ -11,6 +11,17 @@ class MathQAPrompt(StringPromptTemplate):
         "<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
     )
 
+    TEMPLATE: str = (
+        "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
+        "You are a meticulous AI mathematician. Your task is to solve the following math problem.\n"
+        "IMPORTANT: Before you begin, assess if the problem is solvable. A problem may be unsolvable if it's illogical, contradictory, or missing essential information.\n"
+        "If the problem is solvable, proceed by thinking step-by-step, showing all your reasoning and calculations, and then clearly state the final numerical answer.\n"
+        "If the problem is unsolvable, you must state that it cannot be answered and provide a brief explanation for why."
+        "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
+        "{query}"
+        "<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
+    )
+
     def format(self, query: str) -> str:
         return self.TEMPLATE.format(query=query)
 

@@ -93,7 +93,7 @@ async def _generate_data_for_chunk(
     return responses
 
 
-async def generate_concurrently(
+async def concurrent_data_generation(
     model,
     prompt_class: StringPromptTemplate,
     data_chunks: list[list[dict]],
@@ -129,5 +129,90 @@ async def generate_concurrently(
     result_chunks = await asyncio.gather(*tasks, return_exceptions=False)
     for chunk in result_chunks:
         all_results.extend(chunk)
+
+    return all_results
+
+
+async def _process_data_chunk(
+    agent,
+    data_chunk: list[dict],
+    extract_args: Callable,
+    max_concurrency: int = 10,
+) -> list[dict]:
+    """
+    Processes a single chunk of data items with controlled concurrency using a semaphore.
+
+    This function is designed to run within a single process. It takes a data
+    chunk and processes its items by making concurrent API calls, but limits the
+    number of parallel calls to `max_concurrency` to avoid overwhelming the API
+    and to manage local resources.
+
+    Args:
+        agent: The agent instance with a `.model.ainvoke` method.
+        data_chunk: A list of dictionaries, where each represents an item to process.
+        agent_args: A list of keys to extract from each item for the model's input.
+        max_concurrency: The maximum number of API calls to have in-flight at any time.
+
+    Returns:
+        A list of results from the model. Failed calls are logged and excluded.
+    """
+    semaphore = asyncio.Semaphore(max_concurrency)
+    
+    async def process_item(item):
+        """Safely process one item using the semaphore."""
+        async with semaphore:
+            return await agent.model.ainvoke(extract_args(item))
+
+    tasks = [process_item(item) for item in data_chunk]
+    
+    # Gather results, allowing individual tasks to fail without stopping others.
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Filter out exceptions and log them, keeping only successful results.
+    successful_results = []
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            logger.error(f"Error processing item {i} in chunk: {result}")
+        else:
+            successful_results.append(result)
+
+    return successful_results
+
+async def concurrent_data_postprocessing(
+    agent,
+    data_chunks: list[list[dict]],
+    extract_args: Callable,
+) -> list[dict]:
+    """
+    Processes multiple data chunks using a multi-level concurrency model.
+
+    This function acts as a high-level orchestrator, assuming that you have already
+    split a very large dataset into manageable `data_chunks`. It processes these
+    chunks concurrently. Each chunk is handled by `_process_data_chunk`, which
+    in turn processes items within that chunk using controlled concurrency.
+
+    Args:
+        agent: The agent instance to use for processing.
+        data_chunks: A list of data chunks (a list of lists of dictionaries).
+        agent_args: A list of keys to pass to the agent's model from each data item.
+
+    Returns:
+        A flattened list containing all successful results from all chunks.
+    """
+    all_results = []
+    
+    tasks = [
+        _process_data_chunk(agent, data_chunk, extract_args)
+        for data_chunk in data_chunks
+    ]
+    
+    # Gather the results from all chunk-processing tasks.
+    result_chunks = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    for chunk_result in result_chunks:
+        if isinstance(chunk_result, Exception):
+            logger.error(f"A data chunk failed to process entirely: {chunk_result}")
+        else:
+            all_results.extend(chunk_result)
 
     return all_results

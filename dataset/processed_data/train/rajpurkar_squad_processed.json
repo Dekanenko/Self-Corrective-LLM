@@ -1,0 +1,1388 @@
+[
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe Pew Forum on Religion & Public Life ranks Egypt as the fifth worst country in the world for religious freedom. The United States Commission on International Religious Freedom, a bipartisan independent agency of the US government, has placed Egypt on its watch list of countries that require close monitoring due to the nature and extent of violations of religious freedom engaged in or tolerated by the government. According to a 2010 Pew Global Attitudes survey, 84% of Egyptians polled supported the death penalty for those who leave Islam; 77% supported whippings and cutting off of hands for theft and robbery; and 82% support stoning a person who commits adultery.\n'''\n\nQuestion: What percentage of Egyptians polled support death penalty for those leaving Islam?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What percentage of Egyptians polled support death penalty for those leaving Islam?",
+        "context": "The Pew Forum on Religion & Public Life ranks Egypt as the fifth worst country in the world for religious freedom. The United States Commission on International Religious Freedom, a bipartisan independent agency of the US government, has placed Egypt on its watch list of countries that require close monitoring due to the nature and extent of violations of religious freedom engaged in or tolerated by the government. According to a 2010 Pew Global Attitudes survey, 84% of Egyptians polled supported the death penalty for those who leave Islam; 77% supported whippings and cutting off of hands for theft and robbery; and 82% support stoning a person who commits adultery.",
+        "answer": [
+            "84%"
+        ],
+        "responses": [
+            "84%",
+            "84%",
+            "84%",
+            "84%",
+            "84%",
+            "84%",
+            "According to the Pew Global Attitudes survey, 84% of Egyptians polled supported the death penalty for those leaving Islam.",
+            "84%",
+            "According to the 2010 Pew Global Attitudes survey, 84% of Egyptians polled support the death penalty for those leaving Islam.",
+            "84%"
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe Ann Arbor Hands-On Museum is located in a renovated and expanded historic downtown fire station. Multiple art galleries exist in the city, notably in the downtown area and around the University of Michigan campus. Aside from a large restaurant scene in the Main Street, South State Street, and South University Avenue areas, Ann Arbor ranks first among U.S. cities in the number of booksellers and books sold per capita. The Ann Arbor District Library maintains four branch outlets in addition to its main downtown building. The city is also home to the Gerald R. Ford Presidential Library.\n'''\n\nQuestion: Ann Arbor ranks 1st among what goods sold?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "Ann Arbor ranks 1st among what goods sold?",
+        "context": "The Ann Arbor Hands-On Museum is located in a renovated and expanded historic downtown fire station. Multiple art galleries exist in the city, notably in the downtown area and around the University of Michigan campus. Aside from a large restaurant scene in the Main Street, South State Street, and South University Avenue areas, Ann Arbor ranks first among U.S. cities in the number of booksellers and books sold per capita. The Ann Arbor District Library maintains four branch outlets in addition to its main downtown building. The city is also home to the Gerald R. Ford Presidential Library.",
+        "answer": [
+            "books"
+        ],
+        "responses": [
+            "Books",
+            "Ann Arbor ranks 1st among books.",
+            "Ann Arbor ranks 1st among books.",
+            "Ann Arbor ranks 1st among books.",
+            "Books",
+            "Books",
+            "Books",
+            "Ann Arbor ranks 1st among books.",
+            "Ann Arbor ranks 1st among books.",
+            "Ann Arbor ranks 1st among books."
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nOne important aspect of the rule-of-law initiatives is the study and analysis of the rule of law\u2019s impact on economic development. The rule-of-law movement cannot be fully successful in transitional and developing countries without an answer to the question: does the rule of law matter for economic development or not? Constitutional economics is the study of the compatibility of economic and financial decisions within existing constitutional law frameworks, and such a framework includes government spending on the judiciary, which, in many transitional and developing countries, is completely controlled by the executive. It is useful to distinguish between the two methods of corruption of the judiciary: corruption by the executive branch, in contrast to corruption by private actors.\n'''\n\nQuestion: In developing countries, who makes most of the spending decisions?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "In developing countries, who makes most of the spending decisions?",
+        "context": "One important aspect of the rule-of-law initiatives is the study and analysis of the rule of law\u2019s impact on economic development. The rule-of-law movement cannot be fully successful in transitional and developing countries without an answer to the question: does the rule of law matter for economic development or not? Constitutional economics is the study of the compatibility of economic and financial decisions within existing constitutional law frameworks, and such a framework includes government spending on the judiciary, which, in many transitional and developing countries, is completely controlled by the executive. It is useful to distinguish between the two methods of corruption of the judiciary: corruption by the executive branch, in contrast to corruption by private actors.",
+        "answer": [
+            "the executive"
+        ],
+        "responses": [
+            "In developing countries, the judiciary is controlled by the executive branch.",
+            "In developing countries, the government, specifically the executive branch, makes most of the spending decisions on the judiciary, as it is often controlled by the executive branch.",
+            "Executive branch.",
+            "The executive branch.",
+            "In developing countries, the judiciary, specifically the executive branch, makes most of the spending decisions on the judiciary, as it is often controlled by the executive branch.",
+            "In developing countries, the executive branch makes most of the spending decisions on the judiciary.",
+            "Executive branch",
+            "In developing countries, the government makes most of the spending decisions.",
+            "In developing countries, the government makes most of the spending decisions on the judiciary.",
+            "Executive branch."
+        ],
+        "errors": [
+            [
+                {
+                    "description": "The response states that the judiciary is controlled by the executive branch, but the question asks who makes most of the spending decisions. The correct answer, according to the context, is the executive.",
+                    "location": "the judiciary is controlled by the executive branch",
+                    "correction": "DELETE: \"the judiciary is controlled by the executive branch\"\nADD: \"the executive\""
+                }
+            ],
+            [
+                {
+                    "description": "The response focuses solely on spending decisions related to the judiciary, while the question asks about spending decisions in general.",
+                    "location": "the spending decisions on the judiciary, as it is often controlled by the executive branch",
+                    "correction": "DELETE: \"the spending decisions on the judiciary, as it is often controlled by the executive branch\""
+                }
+            ],
+            [],
+            [],
+            [
+                {
+                    "description": "The response incorrectly states that the judiciary makes most of the spending decisions. The context states that the executive branch controls government spending on the judiciary.",
+                    "location": "the judiciary, specifically the executive branch, makes most of the spending decisions on the judiciary",
+                    "correction": "DELETE: \"the judiciary, specifically \""
+                },
+                {
+                    "description": "The response is unnecessarily verbose. The correct answer is simply 'the executive'.",
+                    "location": "as it is often controlled by the executive branch.",
+                    "correction": "DELETE: \"as it is often controlled by the executive branch.\""
+                }
+            ],
+            [
+                {
+                    "description": "The response states that the executive branch makes most of the spending decisions on the judiciary, but the question asks who makes most of the spending decisions in general in developing countries. The context only mentions the judiciary.",
+                    "location": "on the judiciary",
+                    "correction": "DELETE: on the judiciary"
+                }
+            ],
+            [],
+            [
+                {
+                    "description": "The response states that the government makes most of the spending decisions, but the context indicates that the executive branch controls government spending on the judiciary in many transitional and developing countries. The correct answer is 'the executive'.",
+                    "location": "the government",
+                    "correction": "DELETE: \"the government\"\nADD: \"the executive\""
+                }
+            ],
+            [
+                {
+                    "description": "The response states that the government makes most of the spending decisions on the judiciary, but the context states that the executive controls government spending on the judiciary. The correct answer is 'the executive'.",
+                    "location": "the government",
+                    "correction": "DELETE: \"the government\"\nADD: \"the executive\""
+                },
+                {
+                    "description": "The response states that spending decisions are made on the judiciary, but the question asks about spending decisions in general.",
+                    "location": "on the judiciary",
+                    "correction": "DELETE: \"on the judiciary\""
+                }
+            ],
+            []
+        ],
+        "wrong_response_number": 6,
+        "responses_to_correct": [
+            "In developing countries, the judiciary, specifically the executive branch, makes most of the spending decisions on the judiciary, as it is often controlled by the executive branch.",
+            "In developing countries, the government makes most of the spending decisions on the judiciary.",
+            "In developing countries, the judiciary is controlled by the executive branch."
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response incorrectly states that the judiciary makes most of the spending decisions. The context states that the executive branch controls government spending on the judiciary.",
+                    "location": "the judiciary, specifically the executive branch, makes most of the spending decisions on the judiciary",
+                    "correction": "DELETE: \"the judiciary, specifically \""
+                },
+                {
+                    "description": "The response is unnecessarily verbose. The correct answer is simply 'the executive'.",
+                    "location": "as it is often controlled by the executive branch.",
+                    "correction": "DELETE: \"as it is often controlled by the executive branch.\""
+                }
+            ],
+            [
+                {
+                    "description": "The response states that the government makes most of the spending decisions on the judiciary, but the context states that the executive controls government spending on the judiciary. The correct answer is 'the executive'.",
+                    "location": "the government",
+                    "correction": "DELETE: \"the government\"\nADD: \"the executive\""
+                },
+                {
+                    "description": "The response states that spending decisions are made on the judiciary, but the question asks about spending decisions in general.",
+                    "location": "on the judiciary",
+                    "correction": "DELETE: \"on the judiciary\""
+                }
+            ],
+            [
+                {
+                    "description": "The response states that the judiciary is controlled by the executive branch, but the question asks who makes most of the spending decisions. The correct answer, according to the context, is the executive.",
+                    "location": "the judiciary is controlled by the executive branch",
+                    "correction": "DELETE: \"the judiciary is controlled by the executive branch\"\nADD: \"the executive\""
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "In developing countries, the judiciary,<DEL_W> specifically the executive branch, makes most of the spending decisions on the judiciary, as it is often controlled by the executive branch.<DEL_S> the executive",
+            "In developing countries, the judiciary is controlled by the executive branch<DEL_S> the executive."
+        ],
+        "verified_response_mask": [
+            true,
+            false,
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nIn December 1547, Francis was in Malacca (Malaysia) waiting to return to Goa (India) when he met a low-ranked samurai named Anjiro (possibly spelled \"Yajiro\"). Anjiro was not an intellectual, but he impressed Xavier because he took careful notes of everything he said in church. Xavier made the decision to go to Japan in part because this low-ranking samurai convinced him in Portuguese that the Japanese people were highly educated and eager to learn. They were hard workers and respectful of authority. In their laws and customs they were led by reason, and, should the Christian faith convince them of its truth, they would accept it en masse.\n'''\n\nQuestion: Who impressed Xavier by taking notes in church?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "Who impressed Xavier by taking notes in church?",
+        "context": "In December 1547, Francis was in Malacca (Malaysia) waiting to return to Goa (India) when he met a low-ranked samurai named Anjiro (possibly spelled \"Yajiro\"). Anjiro was not an intellectual, but he impressed Xavier because he took careful notes of everything he said in church. Xavier made the decision to go to Japan in part because this low-ranking samurai convinced him in Portuguese that the Japanese people were highly educated and eager to learn. They were hard workers and respectful of authority. In their laws and customs they were led by reason, and, should the Christian faith convince them of its truth, they would accept it en masse.",
+        "answer": [
+            "Anjiro"
+        ],
+        "responses": [
+            "Anjiro (or possibly spelled \"Yajiro\") impressed Xavier by taking careful notes in church.",
+            "Anjiro (possibly spelled \"Yajiro\").",
+            "Anjiro (possibly spelled \"Yajiro\") impressed Xavier by taking notes in church.",
+            "Anjiro, a low-ranked samurai.",
+            "Anjiro (possibly spelled \"Yajiro\") impressed Xavier by taking careful notes in church.",
+            "Anjiro.",
+            "Anjiro (possibly spelled \"Yajiro\") impressed Xavier by taking careful notes in church.",
+            "Anjiro, a low-ranked samurai.",
+            "Francis, a low-ranked samurai named Anjiro.",
+            "Anjiro."
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [
+                {
+                    "description": "The response includes 'Francis' which is incorrect according to the context and correct answer.",
+                    "location": "Francis, a",
+                    "correction": "DELETE: Francis, a\nADD: A"
+                }
+            ],
+            []
+        ],
+        "wrong_response_number": 1,
+        "responses_to_correct": [
+            "Francis, a low-ranked samurai named Anjiro."
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response includes 'Francis' which is incorrect according to the context and correct answer.",
+                    "location": "Francis, a",
+                    "correction": "DELETE: Francis, a\nADD: A"
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "Francis,<DEL_W> a low-ranked samurai named Anjiro."
+        ],
+        "verified_response_mask": [
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nGroups are also applied in many other mathematical areas. Mathematical objects are often examined by associating groups to them and studying the properties of the corresponding groups. For example, Henri Poincar\u00e9 founded what is now called algebraic topology by introducing the fundamental group. By means of this connection, topological properties such as proximity and continuity translate into properties of groups.i[\u203a] For example, elements of the fundamental group are represented by loops. The second image at the right shows some loops in a plane minus a point. The blue loop is considered null-homotopic (and thus irrelevant), because it can be continuously shrunk to a point. The presence of the hole prevents the orange loop from being shrunk to a point. The fundamental group of the plane with a point deleted turns out to be infinite cyclic, generated by the orange loop (or any other loop winding once around the hole). This way, the fundamental group detects the hole.\n'''\n\nQuestion: What represents elements of the fundamental group?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What represents elements of the fundamental group?",
+        "context": "Groups are also applied in many other mathematical areas. Mathematical objects are often examined by associating groups to them and studying the properties of the corresponding groups. For example, Henri Poincar\u00e9 founded what is now called algebraic topology by introducing the fundamental group. By means of this connection, topological properties such as proximity and continuity translate into properties of groups.i[\u203a] For example, elements of the fundamental group are represented by loops. The second image at the right shows some loops in a plane minus a point. The blue loop is considered null-homotopic (and thus irrelevant), because it can be continuously shrunk to a point. The presence of the hole prevents the orange loop from being shrunk to a point. The fundamental group of the plane with a point deleted turns out to be infinite cyclic, generated by the orange loop (or any other loop winding once around the hole). This way, the fundamental group detects the hole.",
+        "answer": [
+            "loops"
+        ],
+        "responses": [
+            "Elements of the fundamental group.",
+            "Elements of the fundamental group.",
+            "Loops",
+            "Elements of the fundamental group.",
+            "Loops.",
+            "Loops",
+            "Loops",
+            "Loops.",
+            "Loops",
+            "Elements of the fundamental group."
+        ],
+        "errors": [
+            [
+                {
+                    "description": "The response is incomplete. According to the context, elements of the fundamental group are represented by loops.",
+                    "location": "Elements of the fundamental group.",
+                    "correction": "ADD: Elements of the fundamental group are represented by loops."
+                }
+            ],
+            [
+                {
+                    "description": "The response is incomplete. According to the context, elements of the fundamental group are represented by loops.",
+                    "location": "Elements of the fundamental group.",
+                    "correction": "ADD: Elements of the fundamental group are represented by loops."
+                }
+            ],
+            [],
+            [
+                {
+                    "description": "The response is incomplete. According to the context, elements of the fundamental group are represented by loops.",
+                    "location": "Elements of the fundamental group.",
+                    "correction": "ADD: loops"
+                }
+            ],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [
+                {
+                    "description": "The response is incomplete. The context states that elements of the fundamental group are represented by loops.",
+                    "location": "Elements of the fundamental group.",
+                    "correction": "ADD: Elements of the fundamental group are represented by loops."
+                }
+            ]
+        ],
+        "wrong_response_number": 4,
+        "responses_to_correct": [
+            "Elements of the fundamental group.",
+            "Elements of the fundamental group.",
+            "Elements of the fundamental group."
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response is incomplete. According to the context, elements of the fundamental group are represented by loops.",
+                    "location": "Elements of the fundamental group.",
+                    "correction": "ADD: Elements of the fundamental group are represented by loops."
+                }
+            ],
+            [
+                {
+                    "description": "The response is incomplete. According to the context, elements of the fundamental group are represented by loops.",
+                    "location": "Elements of the fundamental group.",
+                    "correction": "ADD: Elements of the fundamental group are represented by loops."
+                }
+            ],
+            [
+                {
+                    "description": "The response is incomplete. According to the context, elements of the fundamental group are represented by loops.",
+                    "location": "Elements of the fundamental group.",
+                    "correction": "ADD: loops"
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "Elements of the fundamental group.<DEL_A> Elements of the fundamental group are represented by loops.",
+            "Elements of the fundamental group.<DEL_A> Elements of the fundamental group are represented by loops.",
+            "Elements of the fundamental group.<DEL_A> loops"
+        ],
+        "verified_response_mask": [
+            true,
+            true,
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nMost former British colonies and protectorates are among the 53 member states of the Commonwealth of Nations, a non-political, voluntary association of equal members, comprising a population of around 2.2 billion people. Sixteen Commonwealth realms voluntarily continue to share the British monarch, Queen Elizabeth II, as their head of state. These sixteen nations are distinct and equal legal entities \u2013 the United Kingdom, Australia, Canada, New Zealand, Papua New Guinea, Antigua and Barbuda, The Bahamas, Barbados, Belize, Grenada, Jamaica, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, Solomon Islands and Tuvalu.\n'''\n\nQuestion: What is the population of the Commonwealth?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What is the population of the Commonwealth?",
+        "context": "Most former British colonies and protectorates are among the 53 member states of the Commonwealth of Nations, a non-political, voluntary association of equal members, comprising a population of around 2.2 billion people. Sixteen Commonwealth realms voluntarily continue to share the British monarch, Queen Elizabeth II, as their head of state. These sixteen nations are distinct and equal legal entities \u2013 the United Kingdom, Australia, Canada, New Zealand, Papua New Guinea, Antigua and Barbuda, The Bahamas, Barbados, Belize, Grenada, Jamaica, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines, Solomon Islands and Tuvalu.",
+        "answer": [
+            "2.2 billion"
+        ],
+        "responses": [
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion",
+            "2.2 billion"
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nFollowing the German unconditional surrender, Eisenhower was appointed Military Governor of the U.S. Occupation Zone, based at the IG Farben Building in Frankfurt am Main. He had no responsibility for the other three zones, controlled by Britain, France and the Soviet Union, except for the city of Berlin, which was managed by the Four-Power Authorities through the Allied Kommandatura as the governing body. Upon discovery of the Nazi concentration camps, he ordered camera crews to document evidence of the atrocities in them for use in the Nuremberg Trials. He reclassified German prisoners of war (POWs) in U.S. custody as Disarmed Enemy Forces (DEFs), who were no longer subject to the Geneva Convention. Eisenhower followed the orders laid down by the Joint Chiefs of Staff (JCS) in directive JCS 1067, but softened them by bringing in 400,000 tons of food for civilians and allowing more fraternization. In response to the devastation in Germany, including food shortages and an influx of refugees, he arranged distribution of American food and medical equipment. His actions reflected the new American attitudes of the German people as Nazi victims not villains, while aggressively purging the ex-Nazis.\n'''\n\nQuestion: What was Eisenhower's title after Germany's surrender?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What was Eisenhower's title after Germany's surrender?",
+        "context": "Following the German unconditional surrender, Eisenhower was appointed Military Governor of the U.S. Occupation Zone, based at the IG Farben Building in Frankfurt am Main. He had no responsibility for the other three zones, controlled by Britain, France and the Soviet Union, except for the city of Berlin, which was managed by the Four-Power Authorities through the Allied Kommandatura as the governing body. Upon discovery of the Nazi concentration camps, he ordered camera crews to document evidence of the atrocities in them for use in the Nuremberg Trials. He reclassified German prisoners of war (POWs) in U.S. custody as Disarmed Enemy Forces (DEFs), who were no longer subject to the Geneva Convention. Eisenhower followed the orders laid down by the Joint Chiefs of Staff (JCS) in directive JCS 1067, but softened them by bringing in 400,000 tons of food for civilians and allowing more fraternization. In response to the devastation in Germany, including food shortages and an influx of refugees, he arranged distribution of American food and medical equipment. His actions reflected the new American attitudes of the German people as Nazi victims not villains, while aggressively purging the ex-Nazis.",
+        "answer": [
+            "Military Governor of the U.S. Occupation Zone"
+        ],
+        "responses": [
+            "General Dwight D. Eisenhower",
+            "After Germany's unconditional surrender, Eisenhower was appointed Military Governor of the U.S. Occupation Zone, based at the IG Farben Building in Frankfurt am Main.",
+            "Military Governor",
+            "Eisenhower was appointed Military Governor of the U.S. Occupation Zone.",
+            "Eisenhower was appointed Military Governor of the U.S. Occupation Zone.",
+            "After Germany's unconditional surrender, Eisenhower was appointed as the Military Governor of the U.S. Occupation Zone, based at the IG Farben Building in Frankfurt am Main.",
+            "Military Governor",
+            "After Germany's unconditional surrender, Eisenhower was appointed Military Governor of the U.S. Occupation Zone.",
+            "Eisenhower was appointed Military Governor of the U.S. Occupation Zone.",
+            "Eisenhower was appointed Military Governor of the U.S. Occupation Zone."
+        ],
+        "errors": [
+            [
+                {
+                    "description": "The response only provides Eisenhower's name, but the question asks for his title after Germany's surrender. The correct answer is 'Military Governor of the U.S. Occupation Zone'.",
+                    "location": "General Dwight D. Eisenhower",
+                    "correction": "ADD: Military Governor of the U.S. Occupation Zone"
+                }
+            ],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 1,
+        "responses_to_correct": [
+            "General Dwight D. Eisenhower"
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response only provides Eisenhower's name, but the question asks for his title after Germany's surrender. The correct answer is 'Military Governor of the U.S. Occupation Zone'.",
+                    "location": "General Dwight D. Eisenhower",
+                    "correction": "ADD: Military Governor of the U.S. Occupation Zone"
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "General Dwight D. Eisenhower<DEL_A> Military Governor of the U.S. Occupation Zone"
+        ],
+        "verified_response_mask": [
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThese regions were occupied by \"the brown men,\" with the yellow in the Far East and the black in Africa. The color issue was not settled until Kenya became independent in 1963, ending the last vestige of the British Empire.\n'''\n\nQuestion: These regions were occupied by who?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "These regions were occupied by who?",
+        "context": "These regions were occupied by \"the brown men,\" with the yellow in the Far East and the black in Africa. The color issue was not settled until Kenya became independent in 1963, ending the last vestige of the British Empire.",
+        "answer": [
+            "the brown men"
+        ],
+        "responses": [
+            "The brown men.",
+            "The brown men.",
+            "Yellow.",
+            "The \"brown men\"",
+            "The brown men.",
+            "The brown men.",
+            "The brown men.",
+            "The brown men.",
+            "Yellow.",
+            "\"The brown men\""
+        ],
+        "errors": [
+            [],
+            [],
+            [
+                {
+                    "description": "The response contradicts the context, which states that the regions were occupied by \"the brown men.\"",
+                    "location": "Yellow",
+                    "correction": "DELETE: \"Yellow\"\nADD: \"The brown men\""
+                }
+            ],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [
+                {
+                    "description": "The response contradicts the context, which states that the regions were occupied by \"the brown men.\"",
+                    "location": "Yellow",
+                    "correction": "DELETE: \"Yellow\"\nADD: \"The brown men\""
+                }
+            ],
+            []
+        ],
+        "wrong_response_number": 2,
+        "responses_to_correct": [
+            "Yellow.",
+            "Yellow."
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response contradicts the context, which states that the regions were occupied by \"the brown men.\"",
+                    "location": "Yellow",
+                    "correction": "DELETE: \"Yellow\"\nADD: \"The brown men\""
+                }
+            ],
+            [
+                {
+                    "description": "The response contradicts the context, which states that the regions were occupied by \"the brown men.\"",
+                    "location": "Yellow",
+                    "correction": "DELETE: \"Yellow\"\nADD: \"The brown men\""
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "Yellow.<DEL_A> ['the brown men']",
+            "Yellow.<DEL_A> ['the brown men']"
+        ],
+        "verified_response_mask": [
+            true,
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThere is usually an indication for a specific identification of an infectious agent only when such identification can aid in the treatment or prevention of the disease, or to advance knowledge of the course of an illness prior to the development of effective therapeutic or preventative measures. For example, in the early 1980s, prior to the appearance of AZT for the treatment of AIDS, the course of the disease was closely followed by monitoring the composition of patient blood samples, even though the outcome would not offer the patient any further treatment options. In part, these studies on the appearance of HIV in specific communities permitted the advancement of hypotheses as to the route of transmission of the virus. By understanding how the disease was transmitted, resources could be targeted to the communities at greatest risk in campaigns aimed at reducing the number of new infections. The specific serological diagnostic identification, and later genotypic or molecular identification, of HIV also enabled the development of hypotheses as to the temporal and geographical origins of the virus, as well as a myriad of other hypothesis. The development of molecular diagnostic tools have enabled physicians and researchers to monitor the efficacy of treatment with anti-retroviral drugs. Molecular diagnostics are now commonly used to identify HIV in healthy people long before the onset of illness and have been used to demonstrate the existence of people who are genetically resistant to HIV infection. Thus, while there still is no cure for AIDS, there is great therapeutic and predictive benefit to identifying the virus and monitoring the virus levels within the blood of infected individuals, both for the patient and for the community at large.\n'''\n\nQuestion: What could be done by understanding how the disease was transmitted?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What could be done by understanding how the disease was transmitted?",
+        "context": "There is usually an indication for a specific identification of an infectious agent only when such identification can aid in the treatment or prevention of the disease, or to advance knowledge of the course of an illness prior to the development of effective therapeutic or preventative measures. For example, in the early 1980s, prior to the appearance of AZT for the treatment of AIDS, the course of the disease was closely followed by monitoring the composition of patient blood samples, even though the outcome would not offer the patient any further treatment options. In part, these studies on the appearance of HIV in specific communities permitted the advancement of hypotheses as to the route of transmission of the virus. By understanding how the disease was transmitted, resources could be targeted to the communities at greatest risk in campaigns aimed at reducing the number of new infections. The specific serological diagnostic identification, and later genotypic or molecular identification, of HIV also enabled the development of hypotheses as to the temporal and geographical origins of the virus, as well as a myriad of other hypothesis. The development of molecular diagnostic tools have enabled physicians and researchers to monitor the efficacy of treatment with anti-retroviral drugs. Molecular diagnostics are now commonly used to identify HIV in healthy people long before the onset of illness and have been used to demonstrate the existence of people who are genetically resistant to HIV infection. Thus, while there still is no cure for AIDS, there is great therapeutic and predictive benefit to identifying the virus and monitoring the virus levels within the blood of infected individuals, both for the patient and for the community at large.",
+        "answer": [
+            "resources could be targeted to the communities at greatest risk"
+        ],
+        "responses": [
+            "Understanding how the disease was transmitted could have enabled the development of targeted campaigns to reduce the number of new infections.",
+            "By understanding how HIV was transmitted, it was possible to:\n\n1. Targeted campaigns to reduce the number of new infections in high-risk communities\n2. Develop hypotheses to prevent new infections\n3. Improve the effectiveness of anti-retroviral treatment\n4. Monitor the efficacy of treatment with anti-retroviral drugs\n5. Identify people who are genetically resistant to HIV infection",
+            "According to the context, understanding how the disease was transmitted could help in:\n\n1. Targeting communities at greatest risk of infection in campaigns aimed at reducing the number of new infections.\n2. Developing hypotheses as to the route of transmission of the virus.",
+            "The development of molecular diagnostic tools.",
+            "According to the text, understanding how the disease was transmitted could lead to:\n\n1. Targeted campaigns to reduce the number of new infections in communities at risk.\n2. Development of hypotheses about the route of transmission of the virus.\n3. Monitoring of the virus's temporal and geographical origins.",
+            "By understanding how the disease was transmitted, it is possible to:\n\n* Targeted campaigns to reduce new infections\n* Develop hypotheses about the route of transmission\n* Improve the efficacy of treatment with anti-retroviral drugs\n* Monitor the efficacy of treatment\n* Identify people who are genetically resistant to HIV infection.",
+            "By understanding how HIV was transmitted, resources could be targeted to the communities at greatest risk in campaigns aimed at reducing the number of new infections.",
+            "Identify the route of transmission of the virus.",
+            "The transmission of HIV.",
+            "By understanding how the disease was transmitted, researchers and public health officials could target resources to communities at greatest risk, reducing the number of new infections."
+        ],
+        "errors": [
+            [
+                {
+                    "description": "The response describes a potential action ('enabled the development of targeted campaigns') rather than a direct result as stated in the correct answer and context ('resources could be targeted to the communities at greatest risk').",
+                    "location": "Understanding how the disease was transmitted could have enabled the development of targeted campaigns to reduce the number of new infections.",
+                    "correction": "DELETE: Understanding how the disease was transmitted could have enabled the development of targeted campaigns to reduce the number of new infections.\nADD: resources could be targeted to the communities at greatest risk"
+                }
+            ],
+            [
+                {
+                    "description": "The response lists multiple actions that were possible by understanding how HIV was transmitted, but the context only explicitly mentions targeting resources to high-risk communities. The other points are related to HIV research and treatment, but not directly tied to understanding the transmission route in the provided context.",
+                    "location": "1. Targeted campaigns to reduce the number of new infections in high-risk communities\n2. Develop hypotheses to prevent new infections\n3. Improve the effectiveness of anti-retroviral treatment\n4. Monitor the efficacy of treatment with anti-retroviral drugs\n5. Identify people who are genetically resistant to HIV infection",
+                    "correction": "DELETE: 1. Targeted campaigns to reduce the number of new infections in high-risk communities\n2. Develop hypotheses to prevent new infections\n3. Improve the effectiveness of anti-retroviral treatment\n4. Monitor the efficacy of treatment with anti-retroviral drugs\n5. Identify people who are genetically resistant to HIV infection\nADD: resources could be targeted to the communities at greatest risk"
+                }
+            ],
+            [
+                {
+                    "description": "The response includes an additional point that is not the focus of the question. The question asks what could be done by understanding how the disease was transmitted, and the correct answer focuses on targeting resources. While the response's second point is mentioned in the context, it's not the direct consequence of understanding disease transmission that the question is asking about.",
+                    "location": "2. Developing hypotheses as to the route of transmission of the virus.",
+                    "correction": "DELETE: 2. Developing hypotheses as to the route of transmission of the virus."
+                }
+            ],
+            [
+                {
+                    "description": "The response does not answer the question of what could be done by understanding how the disease was transmitted. The correct answer is that resources could be targeted to the communities at greatest risk.",
+                    "location": "The development of molecular diagnostic tools.",
+                    "correction": "DELETE: \"The development of molecular diagnostic tools.\"\nADD: \"resources could be targeted to the communities at greatest risk\""
+                }
+            ],
+            [
+                {
+                    "description": "The response includes information not directly related to the question of what could be done by understanding how the disease was transmitted. The context states that understanding transmission routes allows resources to be targeted to at-risk communities. The other points are related to the advancement of knowledge, not direct actions.",
+                    "location": "2. Development of hypotheses about the route of transmission of the virus.\n3. Monitoring of the virus's temporal and geographical origins.",
+                    "correction": "DELETE: 2. Development of hypotheses about the route of transmission of the virus.\nDELETE: 3. Monitoring of the virus's temporal and geographical origins."
+                }
+            ],
+            [
+                {
+                    "description": "The response lists multiple things that could be done by understanding how the disease was transmitted, but the correct answer only includes 'resources could be targeted to the communities at greatest risk'. The other items are not direct answers to the question.",
+                    "location": "Develop hypotheses about the route of transmission",
+                    "correction": "DELETE: Develop hypotheses about the route of transmission"
+                },
+                {
+                    "description": "The response lists multiple things that could be done by understanding how the disease was transmitted, but the correct answer only includes 'resources could be targeted to the communities at greatest risk'. The other items are not direct answers to the question.",
+                    "location": "Improve the efficacy of treatment with anti-retroviral drugs",
+                    "correction": "DELETE: Improve the efficacy of treatment with anti-retroviral drugs"
+                },
+                {
+                    "description": "The response lists multiple things that could be done by understanding how the disease was transmitted, but the correct answer only includes 'resources could be targeted to the communities at greatest risk'. The other items are not direct answers to the question.",
+                    "location": "Monitor the efficacy of treatment",
+                    "correction": "DELETE: Monitor the efficacy of treatment"
+                },
+                {
+                    "description": "The response lists multiple things that could be done by understanding how the disease was transmitted, but the correct answer only includes 'resources could be targeted to the communities at greatest risk'. The other items are not direct answers to the question.",
+                    "location": "Identify people who are genetically resistant to HIV infection.",
+                    "correction": "DELETE: Identify people who are genetically resistant to HIV infection."
+                }
+            ],
+            [],
+            [
+                {
+                    "description": "The response does not match the correct answer, which is 'resources could be targeted to the communities at greatest risk'.",
+                    "location": "Identify the route of transmission of the virus.",
+                    "correction": "DELETE: \"Identify the route of transmission of the virus.\"\nADD: \"resources could be targeted to the communities at greatest risk\""
+                }
+            ],
+            [
+                {
+                    "description": "The response does not answer the question of what could be done by understanding how the disease was transmitted. The correct answer is 'resources could be targeted to the communities at greatest risk'.",
+                    "location": "The transmission of HIV.",
+                    "correction": "DELETE: \"The transmission of HIV.\"\nADD: \"resources could be targeted to the communities at greatest risk\""
+                }
+            ],
+            [
+                {
+                    "description": "The response includes information not found in the correct answer or context. The correct answer only states 'resources could be targeted to the communities at greatest risk'.",
+                    "location": "researchers and public health officials could target resources to communities at greatest risk, reducing the number of new infections.",
+                    "correction": "DELETE: \"researchers and public health officials could target resources to communities at greatest risk, reducing the number of new infections.\"\nADD: \"resources could be targeted to the communities at greatest risk\""
+                }
+            ]
+        ],
+        "wrong_response_number": 9,
+        "responses_to_correct": [
+            "By understanding how the disease was transmitted, it is possible to:\n\n* Targeted campaigns to reduce new infections\n* Develop hypotheses about the route of transmission\n* Improve the efficacy of treatment with anti-retroviral drugs\n* Monitor the efficacy of treatment\n* Identify people who are genetically resistant to HIV infection.",
+            "Understanding how the disease was transmitted could have enabled the development of targeted campaigns to reduce the number of new infections.",
+            "By understanding how HIV was transmitted, it was possible to:\n\n1. Targeted campaigns to reduce the number of new infections in high-risk communities\n2. Develop hypotheses to prevent new infections\n3. Improve the effectiveness of anti-retroviral treatment\n4. Monitor the efficacy of treatment with anti-retroviral drugs\n5. Identify people who are genetically resistant to HIV infection"
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response lists multiple things that could be done by understanding how the disease was transmitted, but the correct answer only includes 'resources could be targeted to the communities at greatest risk'. The other items are not direct answers to the question.",
+                    "location": "Develop hypotheses about the route of transmission",
+                    "correction": "DELETE: Develop hypotheses about the route of transmission"
+                },
+                {
+                    "description": "The response lists multiple things that could be done by understanding how the disease was transmitted, but the correct answer only includes 'resources could be targeted to the communities at greatest risk'. The other items are not direct answers to the question.",
+                    "location": "Improve the efficacy of treatment with anti-retroviral drugs",
+                    "correction": "DELETE: Improve the efficacy of treatment with anti-retroviral drugs"
+                },
+                {
+                    "description": "The response lists multiple things that could be done by understanding how the disease was transmitted, but the correct answer only includes 'resources could be targeted to the communities at greatest risk'. The other items are not direct answers to the question.",
+                    "location": "Monitor the efficacy of treatment",
+                    "correction": "DELETE: Monitor the efficacy of treatment"
+                },
+                {
+                    "description": "The response lists multiple things that could be done by understanding how the disease was transmitted, but the correct answer only includes 'resources could be targeted to the communities at greatest risk'. The other items are not direct answers to the question.",
+                    "location": "Identify people who are genetically resistant to HIV infection.",
+                    "correction": "DELETE: Identify people who are genetically resistant to HIV infection."
+                }
+            ],
+            [
+                {
+                    "description": "The response describes a potential action ('enabled the development of targeted campaigns') rather than a direct result as stated in the correct answer and context ('resources could be targeted to the communities at greatest risk').",
+                    "location": "Understanding how the disease was transmitted could have enabled the development of targeted campaigns to reduce the number of new infections.",
+                    "correction": "DELETE: Understanding how the disease was transmitted could have enabled the development of targeted campaigns to reduce the number of new infections.\nADD: resources could be targeted to the communities at greatest risk"
+                }
+            ],
+            [
+                {
+                    "description": "The response lists multiple actions that were possible by understanding how HIV was transmitted, but the context only explicitly mentions targeting resources to high-risk communities. The other points are related to HIV research and treatment, but not directly tied to understanding the transmission route in the provided context.",
+                    "location": "1. Targeted campaigns to reduce the number of new infections in high-risk communities\n2. Develop hypotheses to prevent new infections\n3. Improve the effectiveness of anti-retroviral treatment\n4. Monitor the efficacy of treatment with anti-retroviral drugs\n5. Identify people who are genetically resistant to HIV infection",
+                    "correction": "DELETE: 1. Targeted campaigns to reduce the number of new infections in high-risk communities\n2. Develop hypotheses to prevent new infections\n3. Improve the effectiveness of anti-retroviral treatment\n4. Monitor the efficacy of treatment with anti-retroviral drugs\n5. Identify people who are genetically resistant to HIV infection\nADD: resources could be targeted to the communities at greatest risk"
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "By understanding how the disease was transmitted, it is possible to:\n\n* Targeted campaigns to reduce new infections\n* Develop hypotheses about the route of transmission<DEL_S> resources could be targeted to the communities at greatest risk",
+            "Understanding how the disease was transmitted could have enabled the development of targeted campaigns to reduce the number of new infections.<DEL_A> resources could be targeted to the communities at greatest risk",
+            "By understanding how HIV was transmitted, it was possible to:\n\n1. Targeted campaigns to reduce the number of new infections in high-risk communities\n2. Develop hypotheses to prevent new infections\n3. Improve the effectiveness of anti-retroviral treatment\n4. Monitor the efficacy of treatment with anti-retroviral drugs\n5. Identify people who are genetically resistant to HIV infection<DEL_A> resources could be targeted to the communities at greatest risk"
+        ],
+        "verified_response_mask": [
+            true,
+            true,
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nScarab beetles held religious and cultural symbolism in Old Egypt, Greece and some shamanistic Old World cultures. The ancient Chinese regarded cicadas as symbols of rebirth or immortality. In Mesopotamian literature, the epic poem of Gilgamesh has allusions to Odonata which signify the impossibility of immortality. Amongst the Aborigines of Australia of the Arrernte language groups, honey ants and witchety grubs served as personal clan totems. In the case of the 'San' bush-men of the Kalahari, it is the praying mantis which holds much cultural significance including creation and zen-like patience in waiting.:9\n'''\n\nQuestion: What kind of ants are symbolic among the Australian Aborigines?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What kind of ants are symbolic among the Australian Aborigines?",
+        "context": "Scarab beetles held religious and cultural symbolism in Old Egypt, Greece and some shamanistic Old World cultures. The ancient Chinese regarded cicadas as symbols of rebirth or immortality. In Mesopotamian literature, the epic poem of Gilgamesh has allusions to Odonata which signify the impossibility of immortality. Amongst the Aborigines of Australia of the Arrernte language groups, honey ants and witchety grubs served as personal clan totems. In the case of the 'San' bush-men of the Kalahari, it is the praying mantis which holds much cultural significance including creation and zen-like patience in waiting.:9",
+        "answer": [
+            "honey ants"
+        ],
+        "responses": [
+            "Honey ants.",
+            "Honey ants.",
+            "Honey ants.",
+            "Honey ants",
+            "The praying mantis.",
+            "Honey ants",
+            "Honey ants.",
+            "Witchety grubs.",
+            "Honey ants.",
+            "Honey ants."
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [
+                {
+                    "description": "The response contradicts the context, which states that honey ants are symbolic among the Australian Aborigines.",
+                    "location": "The praying mantis.",
+                    "correction": "DELETE: \"The praying mantis.\"\nADD: \"Honey ants.\""
+                }
+            ],
+            [],
+            [],
+            [
+                {
+                    "description": "The response incorrectly identifies witchety grubs as the symbolic ant among the Australian Aborigines, while the context specifies honey ants.",
+                    "location": "Witchety grubs",
+                    "correction": "DELETE: \"Witchety grubs\"\nADD: \"honey ants\""
+                }
+            ],
+            [],
+            []
+        ],
+        "wrong_response_number": 2,
+        "responses_to_correct": [
+            "The praying mantis.",
+            "Witchety grubs."
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response contradicts the context, which states that honey ants are symbolic among the Australian Aborigines.",
+                    "location": "The praying mantis.",
+                    "correction": "DELETE: \"The praying mantis.\"\nADD: \"Honey ants.\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies witchety grubs as the symbolic ant among the Australian Aborigines, while the context specifies honey ants.",
+                    "location": "Witchety grubs",
+                    "correction": "DELETE: \"Witchety grubs\"\nADD: \"honey ants\""
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "The praying mantis.<DEL_A> Honey ants.",
+            "Witchety grubs<DEL_W> . honey ants."
+        ],
+        "verified_response_mask": [
+            true,
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nIn July 1855, the allied squadron tried to go past Taganrog to Rostov on Don, entering the Don River through the Mius River. On 12 July 1855 HMS Jasper grounded near Taganrog thanks to a fisherman who moved buoys into shallow water. The Cossacks captured the gunboat with all of its guns and blew it up. The third siege attempt was made 19\u201331 August 1855, but the city was already fortified and the squadron could not approach close enough for landing operations. The allied fleet left the Gulf of Taganrog on the 2nd September 1855, with minor military operations along the Azov Sea coast continuing until late autumn 1855.\n'''\n\nQuestion: Who blew up the HMS Jasper?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "Who blew up the HMS Jasper?",
+        "context": "In July 1855, the allied squadron tried to go past Taganrog to Rostov on Don, entering the Don River through the Mius River. On 12 July 1855 HMS Jasper grounded near Taganrog thanks to a fisherman who moved buoys into shallow water. The Cossacks captured the gunboat with all of its guns and blew it up. The third siege attempt was made 19\u201331 August 1855, but the city was already fortified and the squadron could not approach close enough for landing operations. The allied fleet left the Gulf of Taganrog on the 2nd September 1855, with minor military operations along the Azov Sea coast continuing until late autumn 1855.",
+        "answer": [
+            "The Cossacks"
+        ],
+        "responses": [
+            "The Cossacks.",
+            "The Cossacks.",
+            "A fisherman.",
+            "A fisherman",
+            "The Cossacks.",
+            "A fisherman",
+            "The Cossacks.",
+            "A fisherman.",
+            "The Cossacks.",
+            "A fisherman"
+        ],
+        "errors": [
+            [],
+            [],
+            [
+                {
+                    "description": "The response incorrectly identifies who blew up the HMS Jasper. The context states that the Cossacks blew it up, not a fisherman.",
+                    "location": "A fisherman",
+                    "correction": "DELETE: \"A fisherman\"\nADD: \"The Cossacks\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies who blew up the HMS Jasper. The context states it was the Cossacks, not a fisherman.",
+                    "location": "A fisherman",
+                    "correction": "DELETE: \"A fisherman\"\nADD: \"The Cossacks\""
+                }
+            ],
+            [],
+            [
+                {
+                    "description": "The response incorrectly identifies who blew up the HMS Jasper. The context states that the Cossacks blew it up, not a fisherman.",
+                    "location": "A fisherman",
+                    "correction": "DELETE: \"A fisherman\"\nADD: \"The Cossacks\""
+                }
+            ],
+            [],
+            [
+                {
+                    "description": "The response incorrectly states that a fisherman blew up the HMS Jasper. According to the context, the Cossacks blew it up.",
+                    "location": "A fisherman",
+                    "correction": "DELETE: \"A fisherman\"\nADD: \"The Cossacks\""
+                }
+            ],
+            [],
+            [
+                {
+                    "description": "The response incorrectly identifies who blew up the HMS Jasper. The context states that the Cossacks blew it up, not a fisherman.",
+                    "location": "A fisherman",
+                    "correction": "DELETE: \"A fisherman\"\nADD: \"The Cossacks\""
+                }
+            ]
+        ],
+        "wrong_response_number": 5,
+        "responses_to_correct": [
+            "A fisherman.",
+            "A fisherman",
+            "A fisherman"
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response incorrectly identifies who blew up the HMS Jasper. The context states that the Cossacks blew it up, not a fisherman.",
+                    "location": "A fisherman",
+                    "correction": "DELETE: \"A fisherman\"\nADD: \"The Cossacks\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies who blew up the HMS Jasper. The context states it was the Cossacks, not a fisherman.",
+                    "location": "A fisherman",
+                    "correction": "DELETE: \"A fisherman\"\nADD: \"The Cossacks\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies who blew up the HMS Jasper. The context states that the Cossacks blew it up, not a fisherman.",
+                    "location": "A fisherman",
+                    "correction": "DELETE: \"A fisherman\"\nADD: \"The Cossacks\""
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "A fisherman.<DEL_A> The Cossacks.",
+            "A fisherman<DEL_A> The Cossacks",
+            "A fisherman<DEL_A> The Cossacks"
+        ],
+        "verified_response_mask": [
+            true,
+            true,
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe Romans had a greater appreciation for the color green; it was the color of Venus, the goddess of gardens, vegetables and vineyards.The Romans made a fine green earth pigment, which was widely used in the wall paintings of Pompeii, Herculaneum, Lyon, Vaison-la-Romaine, and other Roman cities. They also used the pigment verdigris, made by soaking copper plates in fermenting wine. By the Second Century AD, the Romans were using green in paintings, mosaics and glass, and there were ten different words in Latin for varieties of green.\n'''\n\nQuestion: What pigment was made by soaking copper plates in fermenting wine?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What pigment was made by soaking copper plates in fermenting wine?",
+        "context": "The Romans had a greater appreciation for the color green; it was the color of Venus, the goddess of gardens, vegetables and vineyards.The Romans made a fine green earth pigment, which was widely used in the wall paintings of Pompeii, Herculaneum, Lyon, Vaison-la-Romaine, and other Roman cities. They also used the pigment verdigris, made by soaking copper plates in fermenting wine. By the Second Century AD, the Romans were using green in paintings, mosaics and glass, and there were ten different words in Latin for varieties of green.",
+        "answer": [
+            "verdigris"
+        ],
+        "responses": [
+            "Verdigris.",
+            "Verdigris.",
+            "Verdigris.",
+            "Verdigris.",
+            "Verdigris.",
+            "Verdigris.",
+            "Verdigris.",
+            "Verdigris.",
+            "Verdigris.",
+            "Verdigris."
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nIn the 1970s the US Law Enforcement Assistance Administration (LEAA) found a reduction of 10% to 13% in Washington, D.C.'s violent crime rate during DST. However, the LEAA did not filter out other factors, and it examined only two cities and found crime reductions only in one and only in some crime categories; the DOT decided it was \"impossible to conclude with any confidence that comparable benefits would be found nationwide\". Outdoor lighting has a marginal and sometimes even contradictory influence on crime and fear of crime.\n'''\n\nQuestion: In what decade did the LEAA conduct their investigation of crime and DST?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "In what decade did the LEAA conduct their investigation of crime and DST?",
+        "context": "In the 1970s the US Law Enforcement Assistance Administration (LEAA) found a reduction of 10% to 13% in Washington, D.C.'s violent crime rate during DST. However, the LEAA did not filter out other factors, and it examined only two cities and found crime reductions only in one and only in some crime categories; the DOT decided it was \"impossible to conclude with any confidence that comparable benefits would be found nationwide\". Outdoor lighting has a marginal and sometimes even contradictory influence on crime and fear of crime.",
+        "answer": [
+            "1970s"
+        ],
+        "responses": [
+            "The Law Enforcement Assistance Administration (LEAA) conducted their investigation of crime and DST in the 1970s.",
+            "The 1970s.",
+            "The LEAA conducted their investigation in the 1970s.",
+            "The LEAA conducted their investigation in the 1970s.",
+            "The 1970s",
+            "The LEAA conducted their investigation in the 1970s.",
+            "The answer is the 1970s.",
+            "The 1970s.",
+            "The LEAA conducted their investigation of crime and DST in the 1970s.",
+            "The answer is the 1970s."
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe ranging signals are based on the CDMA principle and have complex structure typical of Galileo or modernized GPS. Similar to the other GNSS, there will be two levels of positioning service: open and restricted (military). The public service shall be available globally to general users. When all the currently planned GNSS systems are deployed, the users will benefit from the use of a total constellation of 75+ satellites, which will significantly improve all the aspects of positioning, especially availability of the signals in so-called urban canyons. The general designer of the COMPASS navigation system is Sun Jiadong, who is also the general designer of its predecessor, the original BeiDou navigation system.\n'''\n\nQuestion: Who designed the COMPASS navigation system?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "Who designed the COMPASS navigation system?",
+        "context": "The ranging signals are based on the CDMA principle and have complex structure typical of Galileo or modernized GPS. Similar to the other GNSS, there will be two levels of positioning service: open and restricted (military). The public service shall be available globally to general users. When all the currently planned GNSS systems are deployed, the users will benefit from the use of a total constellation of 75+ satellites, which will significantly improve all the aspects of positioning, especially availability of the signals in so-called urban canyons. The general designer of the COMPASS navigation system is Sun Jiadong, who is also the general designer of its predecessor, the original BeiDou navigation system.",
+        "answer": [
+            "Sun Jiadong"
+        ],
+        "responses": [
+            "Sun Jiadong",
+            "Sun Jiadong",
+            "Sun Jiadong",
+            "Sun Jiadong.",
+            "Sun Jiadong",
+            "Sun Jiadong",
+            "Sun Jiadong",
+            "Sun Jiadong",
+            "Sun Jiadong, the general designer of the original BeiDou navigation system.",
+            "Sun Jiadong"
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe primary responsibility for a boy's studies lies with his House Master, but he is assisted by an additional director of studies, known as a tutor. Classes, colloquially known as \"divs\" (divisions), are organised on a School basis; the classrooms are separate from the houses. New school buildings have appeared for teaching purposes every decade or so since New Schools, designed by Henry Woodyer and built 1861-3. Despite the introduction of modern technology, the external appearance and locations of many of the classrooms have remained unchanged for a long time.\n'''\n\nQuestion: With whom does the primary responsibility for a student's leaning lie?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "With whom does the primary responsibility for a student's leaning lie?",
+        "context": "The primary responsibility for a boy's studies lies with his House Master, but he is assisted by an additional director of studies, known as a tutor. Classes, colloquially known as \"divs\" (divisions), are organised on a School basis; the classrooms are separate from the houses. New school buildings have appeared for teaching purposes every decade or so since New Schools, designed by Henry Woodyer and built 1861-3. Despite the introduction of modern technology, the external appearance and locations of many of the classrooms have remained unchanged for a long time.",
+        "answer": [
+            "House Master"
+        ],
+        "responses": [
+            "The primary responsibility for a student's learning lies with their House Master.",
+            "The primary responsibility for a student's learning lies with their House Master.",
+            "The House Master.",
+            "The primary responsibility for a student's learning lies with the House Master.",
+            "The primary responsibility for a student's learning lies with the House Master.",
+            "The primary responsibility for a student's learning lies with their House Master.",
+            "House Master",
+            "The primary responsibility for a student's learning lies with the House Master.",
+            "The primary responsibility for a student's leaning lies with his House Master.",
+            "The primary responsibility for a student's leaning lies with their House Master."
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe appearance of more systematic, abstract thinking is another notable aspect of cognitive development during adolescence. For example, adolescents find it easier than children to comprehend the sorts of higher-order abstract logic inherent in puns, proverbs, metaphors, and analogies. Their increased facility permits them to appreciate the ways in which language can be used to convey multiple messages, such as satire, metaphor, and sarcasm. (Children younger than age nine often cannot comprehend sarcasm at all.) This also permits the application of advanced reasoning and logical processes to social and ideological matters such as interpersonal relationships, politics, philosophy, religion, morality, friendship, faith, democracy, fairness, and honesty.\n'''\n\nQuestion: Children under what age often cannot comprehend sarcasm?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "Children under what age often cannot comprehend sarcasm?",
+        "context": "The appearance of more systematic, abstract thinking is another notable aspect of cognitive development during adolescence. For example, adolescents find it easier than children to comprehend the sorts of higher-order abstract logic inherent in puns, proverbs, metaphors, and analogies. Their increased facility permits them to appreciate the ways in which language can be used to convey multiple messages, such as satire, metaphor, and sarcasm. (Children younger than age nine often cannot comprehend sarcasm at all.) This also permits the application of advanced reasoning and logical processes to social and ideological matters such as interpersonal relationships, politics, philosophy, religion, morality, friendship, faith, democracy, fairness, and honesty.",
+        "answer": [
+            "nine"
+        ],
+        "responses": [
+            "Children younger than age nine.",
+            "Children under age nine cannot comprehend sarcasm.",
+            "Children under the age of nine cannot comprehend sarcasm.",
+            "Children under age 9.",
+            "Children under age 9.",
+            "Children under age nine cannot comprehend sarcasm.",
+            "Children under age nine.",
+            "Children under age nine.",
+            "Children under the age of 9.",
+            "Children under age nine."
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nIn addition to re-writing the classification of annelids and 3 previously independent phyla, the molecular phylogenetics analyses undermine the emphasis that decades of previous writings placed on the importance of segmentation in the classification of invertebrates. Polychaetes, which these analyses found to be the parent group, have completely segmented bodies, while polychaetes' echiurans and sipunculan offshoots are not segmented and pogonophores are segmented only in the rear parts of their bodies. It now seems that segmentation can appear and disappear much more easily in the course of evolution than was previously thought. The 2007 study also noted that the ladder-like nervous system, which is associated with segmentation, is less universal previously thought in both annelids and arthropods.[n 2]\n'''\n\nQuestion: What offshoots of polychaetes are unsegmented?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What offshoots of polychaetes are unsegmented?",
+        "context": "In addition to re-writing the classification of annelids and 3 previously independent phyla, the molecular phylogenetics analyses undermine the emphasis that decades of previous writings placed on the importance of segmentation in the classification of invertebrates. Polychaetes, which these analyses found to be the parent group, have completely segmented bodies, while polychaetes' echiurans and sipunculan offshoots are not segmented and pogonophores are segmented only in the rear parts of their bodies. It now seems that segmentation can appear and disappear much more easily in the course of evolution than was previously thought. The 2007 study also noted that the ladder-like nervous system, which is associated with segmentation, is less universal previously thought in both annelids and arthropods.[n 2]",
+        "answer": [
+            "echiurans and sipunculan"
+        ],
+        "responses": [
+            "Sipunculan offshoots",
+            "Echiurans and Sipunculan offshoots.",
+            "Echiurans and Sipunculan offshoots.",
+            "Echiurans and Sipunculan offshoots.",
+            "Echiurans and sipunculan offshoots.",
+            "Echiurans and pogonophores.",
+            "Echiurans and sipunculan offshoots.",
+            "Echiurans and Sipunculan offshoots of polychaetes are unsegmented.",
+            "Echiurans, and Pogonophores.",
+            "Echiurans and Pogonophores."
+        ],
+        "errors": [
+            [
+                {
+                    "description": "The response only provides one of the two offshoots of polychaetes that are unsegmented. The context states that both echiurans and sipunculan are unsegmented.",
+                    "location": "Sipunculan offshoots",
+                    "correction": "ADD: \"echiurans and \""
+                },
+                {
+                    "description": "The response only provides one of the two offshoots of polychaetes that are unsegmented. The context states that both echiurans and sipunculan are unsegmented.",
+                    "location": "Sipunculan offshoots",
+                    "correction": "ADD: \" offshoots\""
+                }
+            ],
+            [],
+            [],
+            [],
+            [
+                {
+                    "description": "The response is missing the word 'offshoots' at the end of the answer.",
+                    "location": "Echiurans and sipunculan",
+                    "correction": "ADD: \"offshoots\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies pogonophores as unsegmented offshoots of polychaetes. According to the context, echiurans and sipunculan are unsegmented, while pogonophores are segmented only in the rear parts of their bodies.",
+                    "location": "pogonophores",
+                    "correction": "DELETE: \"pogonophores\"\nADD: \"sipunculan\""
+                }
+            ],
+            [],
+            [],
+            [
+                {
+                    "description": "The response incorrectly identifies Pogonophores as unsegmented, while the context states that they are segmented only in the rear parts of their bodies.",
+                    "location": "Pogonophores",
+                    "correction": "DELETE: \"Pogonophores\""
+                },
+                {
+                    "description": "The response is missing 'sipunculan' which is also an offshoot of polychaetes that is unsegmented.",
+                    "location": "Echiurans, and",
+                    "correction": "ADD: \"Echiurans and sipunculan,\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies 'Pogonophores' as unsegmented offshoots of polychaetes, while the context states that 'pogonophores are segmented only in the rear parts of their bodies'.",
+                    "location": "Pogonophores",
+                    "correction": "DELETE: \"Pogonophores\"\nADD: \"sipunculan\""
+                }
+            ]
+        ],
+        "wrong_response_number": 5,
+        "responses_to_correct": [
+            "Sipunculan offshoots",
+            "Echiurans, and Pogonophores.",
+            "Echiurans and sipunculan offshoots."
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response only provides one of the two offshoots of polychaetes that are unsegmented. The context states that both echiurans and sipunculan are unsegmented.",
+                    "location": "Sipunculan offshoots",
+                    "correction": "ADD: \"echiurans and \""
+                },
+                {
+                    "description": "The response only provides one of the two offshoots of polychaetes that are unsegmented. The context states that both echiurans and sipunculan are unsegmented.",
+                    "location": "Sipunculan offshoots",
+                    "correction": "ADD: \" offshoots\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies Pogonophores as unsegmented, while the context states that they are segmented only in the rear parts of their bodies.",
+                    "location": "Pogonophores",
+                    "correction": "DELETE: \"Pogonophores\""
+                },
+                {
+                    "description": "The response is missing 'sipunculan' which is also an offshoot of polychaetes that is unsegmented.",
+                    "location": "Echiurans, and",
+                    "correction": "ADD: \"Echiurans and sipunculan,\""
+                }
+            ],
+            [
+                {
+                    "description": "The response is missing the word 'offshoots' at the end of the answer.",
+                    "location": "Echiurans and sipunculan",
+                    "correction": "ADD: \"offshoots\""
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "Sipunculan<DEL_W> echiurans and sipunculan offshoots",
+            "Echiurans and sipunculan offshoots<DEL_W> ."
+        ],
+        "verified_response_mask": [
+            true,
+            false,
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nReligion is extremely important to the Tibetans and has a strong influence over all aspects of their lives. B\u00f6n is the ancient religion of Tibet, but has been almost eclipsed by Tibetan Buddhism, a distinctive form of Mahayana and Vajrayana, which was introduced into Tibet from the Sanskrit Buddhist tradition of northern India. Tibetan Buddhism is practiced not only in Tibet but also in Mongolia, parts of northern India, the Buryat Republic, the Tuva Republic, and in the Republic of Kalmykia and some other parts of China. During China's Cultural Revolution, nearly all Tibet's monasteries were ransacked and destroyed by the Red Guards. A few monasteries have begun to rebuild since the 1980s (with limited support from the Chinese government) and greater religious freedom has been granted \u2013 although it is still limited. Monks returned to monasteries across Tibet and monastic education resumed even though the number of monks imposed is strictly limited. Before the 1950s, between 10 and 20% of males in Tibet were monks.\n'''\n\nQuestion: What has a strong influence over all aspect of Tibetans lives?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What has a strong influence over all aspect of Tibetans lives?",
+        "context": "Religion is extremely important to the Tibetans and has a strong influence over all aspects of their lives. B\u00f6n is the ancient religion of Tibet, but has been almost eclipsed by Tibetan Buddhism, a distinctive form of Mahayana and Vajrayana, which was introduced into Tibet from the Sanskrit Buddhist tradition of northern India. Tibetan Buddhism is practiced not only in Tibet but also in Mongolia, parts of northern India, the Buryat Republic, the Tuva Republic, and in the Republic of Kalmykia and some other parts of China. During China's Cultural Revolution, nearly all Tibet's monasteries were ransacked and destroyed by the Red Guards. A few monasteries have begun to rebuild since the 1980s (with limited support from the Chinese government) and greater religious freedom has been granted \u2013 although it is still limited. Monks returned to monasteries across Tibet and monastic education resumed even though the number of monks imposed is strictly limited. Before the 1950s, between 10 and 20% of males in Tibet were monks.",
+        "answer": [
+            "Religion"
+        ],
+        "responses": [
+            "B\u00f6n",
+            "Religion.",
+            "B\u00f6n",
+            "B\u00f6n",
+            "Religion.",
+            "B\u00f6n.",
+            "Religion",
+            "Religion",
+            "Religion.",
+            "B\u00f6n"
+        ],
+        "errors": [
+            [
+                {
+                    "description": "The response incorrectly identifies the religion that has a strong influence over all aspects of Tibetans' lives. The context states that religion in general, and specifically Tibetan Buddhism, has a strong influence.",
+                    "location": "B\u00f6n",
+                    "correction": "DELETE: \"B\u00f6n\"\nADD: \"Religion\""
+                }
+            ],
+            [],
+            [
+                {
+                    "description": "The response incorrectly identifies B\u00f6n as having a strong influence over all aspects of Tibetans' lives. The context states that religion, specifically Tibetan Buddhism, has a strong influence.",
+                    "location": "B\u00f6n",
+                    "correction": "DELETE: \"B\u00f6n\"\nADD: \"Religion\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies the religion that has a strong influence over all aspects of Tibetans' lives. The context states that religion in general has a strong influence, and while B\u00f6n is mentioned as an ancient religion of Tibet, it is not the primary influence.",
+                    "location": "B\u00f6n",
+                    "correction": "DELETE: \"B\u00f6n\"\nADD: \"Religion\""
+                }
+            ],
+            [],
+            [
+                {
+                    "description": "The response incorrectly identifies 'B\u00f6n' as having a strong influence over all aspects of Tibetans' lives. The context states that religion, specifically Tibetan Buddhism, has a strong influence.",
+                    "location": "B\u00f6n",
+                    "correction": "DELETE: \"B\u00f6n\"\nADD: \"Religion\""
+                }
+            ],
+            [],
+            [],
+            [],
+            [
+                {
+                    "description": "The response incorrectly identifies B\u00f6n as having a strong influence over all aspects of Tibetans' lives, while the context states that religion, specifically Tibetan Buddhism, holds this influence.",
+                    "location": "B\u00f6n",
+                    "correction": "DELETE: \"B\u00f6n\"\nADD: \"Religion\""
+                }
+            ]
+        ],
+        "wrong_response_number": 5,
+        "responses_to_correct": [
+            "B\u00f6n",
+            "B\u00f6n",
+            "B\u00f6n"
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response incorrectly identifies the religion that has a strong influence over all aspects of Tibetans' lives. The context states that religion in general, and specifically Tibetan Buddhism, has a strong influence.",
+                    "location": "B\u00f6n",
+                    "correction": "DELETE: \"B\u00f6n\"\nADD: \"Religion\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies B\u00f6n as having a strong influence over all aspects of Tibetans' lives. The context states that religion, specifically Tibetan Buddhism, has a strong influence.",
+                    "location": "B\u00f6n",
+                    "correction": "DELETE: \"B\u00f6n\"\nADD: \"Religion\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly identifies the religion that has a strong influence over all aspects of Tibetans' lives. The context states that religion in general has a strong influence, and while B\u00f6n is mentioned as an ancient religion of Tibet, it is not the primary influence.",
+                    "location": "B\u00f6n",
+                    "correction": "DELETE: \"B\u00f6n\"\nADD: \"Religion\""
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "B\u00f6n<DEL_A> Religion",
+            "B\u00f6n<DEL_A> Religion",
+            "B\u00f6n<DEL_A> Religion"
+        ],
+        "verified_response_mask": [
+            true,
+            true,
+            true
+        ]
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nDisease can arise if the host's protective immune mechanisms are compromised and the organism inflicts damage on the host. Microorganisms can cause tissue damage by releasing a variety of toxins or destructive enzymes. For example, Clostridium tetani releases a toxin that paralyzes muscles, and staphylococcus releases toxins that produce shock and sepsis. Not all infectious agents cause disease in all hosts. For example, less than 5% of individuals infected with polio develop disease. On the other hand, some infectious agents are highly virulent. The prion causing mad cow disease and Creutzfeldt\u2013Jakob disease invariably kills all animals and people that are infected.\n'''\n\nQuestion: What does the of toxin Clostridium tetani releases do?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "What does the of toxin Clostridium tetani releases do?",
+        "context": "Disease can arise if the host's protective immune mechanisms are compromised and the organism inflicts damage on the host. Microorganisms can cause tissue damage by releasing a variety of toxins or destructive enzymes. For example, Clostridium tetani releases a toxin that paralyzes muscles, and staphylococcus releases toxins that produce shock and sepsis. Not all infectious agents cause disease in all hosts. For example, less than 5% of individuals infected with polio develop disease. On the other hand, some infectious agents are highly virulent. The prion causing mad cow disease and Creutzfeldt\u2013Jakob disease invariably kills all animals and people that are infected.",
+        "answer": [
+            "paralyzes muscles"
+        ],
+        "responses": [
+            "Paralyzes muscles.",
+            "Clostridium tetani releases a toxin that paralyzes muscles.",
+            "Paralyze muscles.",
+            "The toxin released by Clostridium tetani paralyzes muscles.",
+            "The toxin released by Clostridium tetani paralyzes muscles.",
+            "The toxin released by Clostridium tetani paralyzes muscles.",
+            "The toxin released by Clostridium tetani paralyzes muscles.",
+            "The toxin released by Clostridium tetani paralyzes muscles.",
+            "The toxin released by Clostridium tetani paralyzes muscles.",
+            "It paralyzes muscles."
+        ],
+        "errors": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ],
+        "wrong_response_number": 0
+    },
+    {
+        "input": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a specialized question-answering AI. Your task is to give a concise answer to the question using *only* the provided context. Make sure to always give an answer.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nContext:\n'''\nThe term cardinal at one time applied to any priest permanently assigned or incardinated to a church, or specifically to the senior priest of an important church, based on the Latin cardo (hinge), meaning \"principal\" or \"chief\". The term was applied in this sense as early as the ninth century to the priests of the tituli (parishes) of the diocese of Rome. The Church of England retains an instance of this origin of the title, which is held by the two senior members of the College of Minor Canons of St Paul's Cathedral.\n'''\n\nQuestion: The Church of England uses what term that is held by two senior members of the College of Minor Canons of St. Pauls Catherdral?<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+        "question": "The Church of England uses what term that is held by two senior members of the College of Minor Canons of St. Pauls Catherdral?",
+        "context": "The term cardinal at one time applied to any priest permanently assigned or incardinated to a church, or specifically to the senior priest of an important church, based on the Latin cardo (hinge), meaning \"principal\" or \"chief\". The term was applied in this sense as early as the ninth century to the priests of the tituli (parishes) of the diocese of Rome. The Church of England retains an instance of this origin of the title, which is held by the two senior members of the College of Minor Canons of St Paul's Cathedral.",
+        "answer": [
+            "tituli"
+        ],
+        "responses": [
+            "The term is \"Cardinal\".",
+            "The Church of England uses the title \"Cardinal\".",
+            "The Church of England uses the term \"Cardinal\" to refer to two senior members of the College of Minor Canons of St. Paul's Cathedral.",
+            "The Church of England uses the term \"Cardinal\".",
+            "The term is \"Cardinal\".",
+            "The two senior members of the College of Minor Canons of St. Paul's Cathedral in the Church of England use the term \"Cardinal\".",
+            "The Church of England holds the title of Cardinal.",
+            "The Church of England holds the title of \"Cardinal\" that is held by the two senior members of the College of Minor Canons of St. Paul's Cathedral.",
+            "The Church of England uses the term \"Cardinal\".",
+            "The term is \"Cardinal\"."
+        ],
+        "errors": [
+            [
+                {
+                    "description": "The response incorrectly identifies the term used by the Church of England as 'Cardinal'. The context states that the term is 'tituli'.",
+                    "location": "Cardinal",
+                    "correction": "DELETE: \"Cardinal\"\nADD: \"tituli\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the Church of England uses the title \"Cardinal\", while the context indicates that the Church of England retains an instance of the term \"tituli\".",
+                    "location": "the title \"Cardinal\"",
+                    "correction": "DELETE: the title \"Cardinal\"\nADD: the term \"tituli\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the Church of England uses the term \"Cardinal\". The context states that the Church of England uses the term 'tituli'.",
+                    "location": "The Church of England uses the term \"Cardinal\"",
+                    "correction": "DELETE: The Church of England uses the term \"Cardinal\"\nADD: The Church of England uses the term \"tituli\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the Church of England uses the term \"Cardinal\", when the context indicates that the term is \"tituli\".",
+                    "location": "The Church of England uses the term \"Cardinal\".",
+                    "correction": "DELETE: The Church of England uses the term \"Cardinal\"."
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states the term used by the Church of England as \"Cardinal\". The context states the term is \"tituli\".",
+                    "location": "Cardinal",
+                    "correction": "DELETE: \"Cardinal\"\nADD: \"tituli\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the term used by the two senior members of the College of Minor Canons of St. Paul's Cathedral in the Church of England is \"Cardinal\". The context states that the Church of England retains an instance of the term \"tituli\".",
+                    "location": "the term \"Cardinal\"",
+                    "correction": "DELETE: \"the term \\\"Cardinal\\\"\"\nADD: \"the term \\\"tituli\\\"\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the Church of England holds the title of Cardinal. The context states that the Church of England retains an instance of the origin of the title, which is 'tituli'.",
+                    "location": "The Church of England holds the title of Cardinal",
+                    "correction": "DELETE: \"The Church of England holds the title of Cardinal\"\nADD: \"The Church of England uses the term tituli\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the Church of England holds the title of \"Cardinal\". The context states that the Church of England retains an instance of the origin of the title, which is 'tituli'.",
+                    "location": "The Church of England holds the title of \"Cardinal\"",
+                    "correction": "DELETE: The Church of England holds the title of \"Cardinal\"\nADD: The Church of England uses the term \"tituli\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the Church of England uses the term \"Cardinal\", while the context indicates the term is \"tituli\".",
+                    "location": "The Church of England uses the term \"Cardinal\".",
+                    "correction": "DELETE: The Church of England uses the term \"Cardinal\".\nADD: The Church of England uses the term \"tituli\"."
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the term is \"Cardinal\". The context states that the Church of England retains an instance of the origin of the title, which is \"tituli\".",
+                    "location": "Cardinal",
+                    "correction": "DELETE: \"Cardinal\" ADD: \"tituli\""
+                }
+            ]
+        ],
+        "wrong_response_number": 10,
+        "responses_to_correct": [
+            "The term is \"Cardinal\".",
+            "The Church of England uses the title \"Cardinal\".",
+            "The Church of England uses the term \"Cardinal\" to refer to two senior members of the College of Minor Canons of St. Paul's Cathedral."
+        ],
+        "errors_to_correct": [
+            [
+                {
+                    "description": "The response incorrectly identifies the term used by the Church of England as 'Cardinal'. The context states that the term is 'tituli'.",
+                    "location": "Cardinal",
+                    "correction": "DELETE: \"Cardinal\"\nADD: \"tituli\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the Church of England uses the title \"Cardinal\", while the context indicates that the Church of England retains an instance of the term \"tituli\".",
+                    "location": "the title \"Cardinal\"",
+                    "correction": "DELETE: the title \"Cardinal\"\nADD: the term \"tituli\""
+                }
+            ],
+            [
+                {
+                    "description": "The response incorrectly states that the Church of England uses the term \"Cardinal\". The context states that the Church of England uses the term 'tituli'.",
+                    "location": "The Church of England uses the term \"Cardinal\"",
+                    "correction": "DELETE: The Church of England uses the term \"Cardinal\"\nADD: The Church of England uses the term \"tituli\""
+                }
+            ]
+        ],
+        "corrected_responses": [
+            "The term is \"Cardinal\"<DEL_W> tituli.",
+            "The Church of England uses the title \"Cardinal\"<DEL_W> the term \"tituli\".",
+            "The Church of England uses the term \"Cardinal\"<DEL_W> \"tituli\" to refer to two senior members of the College of Minor Canons of St. Paul's Cathedral."
+        ],
+        "verified_response_mask": [
+            true,
+            true,
+            true
+        ]
+    }
+]
