@@ -8,10 +8,12 @@ import json
 # Set up basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def run_command(command, working_dir="."):
+def run_command(command, working_dir=".", shell=False):
     """Helper function to run a shell command and log its output."""
-    logging.info(f"Running command: {' '.join(command)} in '{working_dir}'")
-    process = subprocess.run(command, cwd=working_dir, check=True, capture_output=True, text=True)
+    cmd_for_logging = command if isinstance(command, str) else ' '.join(command)
+    logging.info(f"Running command: {cmd_for_logging} in '{working_dir}'")
+
+    process = subprocess.run(command, cwd=working_dir, check=True, capture_output=True, text=True, shell=shell)
     logging.info(process.stdout)
     if process.stderr:
         logging.warning(process.stderr)
@@ -88,9 +90,9 @@ def main():
 
         # --- 4. Create the Tarball ---
         logging.info(f"Creating tarball '{tarball_name}'...")
-        # The command to create the tarball. We use `.` to package all contents.
-        # This is run inside the cloned repository directory.
-        run_command(["tar", "czf", tarball_name, "*"], working_dir=cloned_repo_path)
+        # The command to create the tarball. We use `*` to package all contents.
+        # This is run inside the cloned repository directory using shell expansion.
+        run_command("tar czf " + tarball_name + " *", working_dir=cloned_repo_path, shell=True)
         
         # --- 5. Upload to S3 ---
         local_tarball_path = os.path.join(cloned_repo_path, tarball_name)

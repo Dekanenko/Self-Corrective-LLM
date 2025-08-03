@@ -1,5 +1,5 @@
 {
-    "model_id": "meta-llama/Llama-3.2-1B-Instruct",
+    "model_id": "meta-llama/Llama-3.1-8B-Instruct",
     "local_model_dir": "model",
     "s3_bucket": "self-corrective-llm-data",
     "s3_key_prefix": "initial_model",
