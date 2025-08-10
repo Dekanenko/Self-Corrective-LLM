@@ -130,7 +130,7 @@ def main():
     load_dotenv()
     
     parser = argparse.ArgumentParser(description="Prepare training data and optionally push to Hugging Face Hub.")
-    parser.add_argument("--config", type=str, default="configs/config.json", help="Path to the configuration file.")
+    parser.add_argument("--config", type=str, default="configs/push_training_data_config.json", help="Path to the configuration file.")
     parser.add_argument("--push_to_hub", action="store_true", help="Push the dataset to the Hugging Face Hub.")
     
     args = parser.parse_args()

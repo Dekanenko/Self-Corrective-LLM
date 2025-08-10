@@ -1,6 +1,6 @@
 # --- Model Artifacts ---
 # Ignore downloaded model files
-model_build/model/
+model_s3_build/model/
 
 # --- Python ---
 # Byte-compiled / optimized / C extensions
