@@ -1,4 +1,6 @@
+import time
 from loguru import logger
+from google.api_core.exceptions import ResourceExhausted
 
 from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -47,6 +49,41 @@ class MathQACorrectionAgent:
         graph.add_conditional_edges("check_for_errors", self.should_correct, {True: "get_errors_to_correct", False: END})
         return graph
 
+
+    def _batch_with_retry(self, chain, prompts):
+        results = [None] * len(prompts)
+        indexed_prompts_to_process = list(enumerate(prompts))
+
+        wait_time = 30  # seconds
+
+        while indexed_prompts_to_process:
+            indices, prompts_to_run = zip(*indexed_prompts_to_process)
+            
+            batch_results = chain.batch(prompts_to_run, return_exceptions=True)
+            
+            failed_prompts_for_next_retry = []
+
+            for i, res in enumerate(batch_results):
+                original_index = indices[i]
+                if isinstance(res, Exception):
+                    if isinstance(res, ResourceExhausted):
+                        logger.warning(f"Rate limit exceeded for a prompt. Will retry. Error: {res}")
+                        failed_prompts_for_next_retry.append((original_index, prompts[original_index]))
+                    else:
+                        # logger.error(f"An unexpected error occurred for a prompt and it will not be retried: {res}")
+                        results[original_index] = res
+                else:
+                    results[original_index] = res
+            
+            if failed_prompts_for_next_retry:
+                logger.info(f"{len(failed_prompts_for_next_retry)} requests failed due to rate limits. Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+                indexed_prompts_to_process = failed_prompts_for_next_retry
+            else:
+                indexed_prompts_to_process = []
+                
+        return results
+
     
     def check_for_errors(self, state: MathQACorrectionState) -> MathQACorrectionState:
         question = state["question"]
@@ -54,8 +91,6 @@ class MathQACorrectionAgent:
         is_answerable = state["is_answerable"]
         response_batch = state["responses"]
         self.error_number = 0
-
-        print(f"Response len: {len(response_batch)}")
 
         parser = PydanticOutputParser(pydantic_object=ErrorList)
         prompt = MathQAErrorCheckPrompt(input_variables=[
@@ -76,7 +111,7 @@ class MathQACorrectionAgent:
         ]
   
         chain = self.error_check_llm | parser
-        result = chain.batch(prompts, return_exceptions=True)
+        result = self._batch_with_retry(chain, prompts)
         
         errors = []
         wrong_response_number = 0
@@ -88,8 +123,8 @@ class MathQACorrectionAgent:
                 responses.append(response_batch[i])
                 wrong_response_number += 1 if result[i].errors else 0
 
-        logger.info(f"Errors: {errors}")
-        logger.info(f"Wrong responses: {wrong_response_number}")
+        # logger.info(f"Errors: {errors}")
+        # logger.info(f"Wrong responses: {wrong_response_number}")
 
         state["errors"] = errors
         state["wrong_response_number"] = wrong_response_number
@@ -117,8 +152,8 @@ class MathQACorrectionAgent:
         state["errors_to_correct"] = errors
         state["responses_to_correct"] = responses
 
-        logger.info(f"Errors to correct: {errors}")
-        logger.info(f"Responses to correct: {responses}")
+        # logger.info(f"Errors to correct: {errors}")
+        # logger.info(f"Responses to correct: {responses}")
 
         return state
     
@@ -148,13 +183,9 @@ class MathQACorrectionAgent:
         ]
   
         chain = self.correction_llm | parser
-
-        try:
-            corrected_responses = chain.batch(prompts)
-        except Exception as e:
-            logger.error(f"Error in MathQACorrectionAgent: {e}")
+        corrected_responses = self._batch_with_retry(chain, prompts)
         
-        logger.info(f"Corrected responses: {corrected_responses}")
+        # logger.info(f"Corrected responses: {corrected_responses}")
         
         state["corrected_responses"] = [ensure_space_after_del_tokens(res) for res in corrected_responses]
         return state
@@ -182,12 +213,13 @@ class MathQACorrectionAgent:
   
         chain = self.correction_llm | StrOutputParser()
 
-        try:
-            verified_response_mask = chain.batch(prompts)
-        except Exception as e:
-            logger.error(f"Error in MathQACorrectionAgent: {e}")
+        # try:
+        #     verified_response_mask = chain.batch(prompts)
+        # except Exception as e:
+        #     logger.error(f"Error in MathQACorrectionAgent: {e}")
+        verified_response_mask = self._batch_with_retry(chain, prompts)
 
-        logger.info(f"Verified responses: {verified_response_mask}")
+        # logger.info(f"Verified responses: {verified_response_mask}")
 
         state["verified_response_mask"] = ['true' in response.lower() for response in verified_response_mask]
         return state
