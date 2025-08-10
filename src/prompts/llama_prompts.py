@@ -3,20 +3,14 @@ from langchain.prompts import StringPromptTemplate
 class MathQAPrompt(StringPromptTemplate):
     TEMPLATE: str = (
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
-        "You are a meticulous AI mathematician. Your task is to solve the following math problem.\n"
-        "Think step by step. Show all your reasoning and calculations. After you have solved the problem, clearly state the final numerical answer at the end of your reasoning.\n"
-        "If the question is unanswerable (e.g., it is illogical or missing information), you must clearly state that it cannot be answered and briefly explain why. Do not attempt to solve it."
-        "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
-        "{query}"
-        "<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
-    )
-
-    TEMPLATE: str = (
-        "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
-        "You are a meticulous AI mathematician. Your task is to solve the following math problem.\n"
-        "IMPORTANT: Before you begin, assess if the problem is solvable. A problem may be unsolvable if it's illogical, contradictory, or missing essential information.\n"
-        "If the problem is solvable, proceed by thinking step-by-step, showing all your reasoning and calculations, and then clearly state the final numerical answer.\n"
-        "If the problem is unsolvable, you must state that it cannot be answered and provide a brief explanation for why."
+        "You are a meticulous AI mathematician. Your task is to solve the following math problem.\n\n"
+        "Follow these steps carefully:\n"
+        "1. **Analyze the problem:** First, understand the given information and what is being asked.\n"
+        "2. **Assess solvability:** Determine if the problem is solvable. A problem might be unsolvable if it's illogical, contains contradictions, or lacks necessary information.\n"
+        "3. **Solve or Explain:**\n"
+        "   - **If solvable:** Provide a step-by-step solution, showing all your reasoning and calculations, and then clearly state the final numerical answer.\n"
+        "   - **If unsolvable:** State that the problem cannot be answered and provide a concise explanation.\n\n"
+        "Your entire response should only contain the solution and final answer (or the explanation for unsolvable problems). Do not add any conversational headers or extraneous text."
         "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
         "{query}"
         "<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
