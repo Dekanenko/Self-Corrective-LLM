@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import sys
+import gc
 from huggingface_hub import HfApi, login
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from dotenv import load_dotenv
@@ -118,7 +119,11 @@ def build_and_deploy(config_path: str):
 
     logger.info("Loading base tokenizer and model...")
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
-    base_model = AutoModelForCausalLM.from_pretrained(base_model_name)
+    base_model = AutoModelForCausalLM.from_pretrained(
+        base_model_name,
+        torch_dtype="auto",
+        device_map="auto"
+    )
 
     logger.info(f"Adding {len(special_tokens)} special tokens: {special_tokens}")
     tokenizer.add_special_tokens({'additional_special_tokens': special_tokens})
@@ -131,9 +136,18 @@ def build_and_deploy(config_path: str):
     SelfCorrectiveLlama.register_for_auto_class("AutoModelForCausalLM")
     custom_model = SelfCorrectiveLlama(base_model.config)
 
+    # Ensure the new model uses the same data type (e.g., bfloat16) as the base model
+    logger.info(f"Casting custom model to the base model's dtype: {base_model.dtype}")
+    custom_model = custom_model.to(base_model.dtype)
+
     logger.info("Loading state dict from base model into custom model...")
     incompatible_keys = custom_model.load_state_dict(base_model.state_dict(), strict=False)
     logger.info(f"State dict loaded. Mismatched keys (expected): {incompatible_keys}")
+    
+    # Explicitly free up memory by deleting the base model
+    logger.info("Base model state copied. Deleting base model to free up memory...")
+    del base_model
+    gc.collect()
     
     # 4. Prepare Local Directory for Deployment
     if os.path.exists(local_output_dir):

@@ -1,6 +1,6 @@
 {
-  "base_model_name": "meta-llama/Llama-3.1-8B-Instruct",
-  "hf_repo_id": "MathBite/raw_self_corrective_llama_8B_model",
+  "base_model_name": "meta-llama/Llama-3.2-1B-Instruct",
+  "hf_repo_id": "MathBite/raw_self_corrective_llama_1B_model",
   "local_output_dir": "self-corrective-llama_untrained",
   "special_tokens": ["<DEL_W>", "<DEL_S>", "<DEL_A>"],
   "model_code_path": "src/self_corrective_llm.py"
