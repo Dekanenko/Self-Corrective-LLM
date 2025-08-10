@@ -41,11 +41,15 @@ def hf_login():
     logger.info("Successfully logged in to Hugging Face Hub.")
 
 def create_model_card(repo_id: str, base_model: str, special_tokens: list) -> str:
-    # (Implementation remains the same as it was already clean)
     """Generates a professional README.md model card."""
     special_tokens_str = ", ".join(f"`{token}`" for token in special_tokens)
+    # NOTE: It is your responsibility to use the correct license identifier for the base model.
+    # For example, for Llama 3 8B Instruct, it is "meta-llama/llama-3-8b-instruct-license".
+    # See the original model card on the Hub for the correct value.
+    license_identifier = "llama3.1" # <-- ADJUST AS NEEDED
+
     return f"""---
-license: apache-2.0
+license: {license_identifier}
 language: en
 base_model: {base_model}
 ---
@@ -84,6 +88,8 @@ model = AutoModelForCausalLM.from_pretrained(
 ## Model Details
 
 This model was programmatically converted and uploaded using a deployment script. The custom class `SelfCorrectiveLlama` can be found in the `modeling.py` file.
+
+The code in `modeling.py` is licensed under the Apache 2.0 License. The model weights are subject to the original license of the base model.
 """
 
 def build_and_deploy(config_path: str):
@@ -142,6 +148,13 @@ def build_and_deploy(config_path: str):
     # 5. Add Custom Code and Model Card
     logger.info("Copying custom model code (`modeling.py`) to the output directory...")
     shutil.copy(model_code_path, os.path.join(local_output_dir, "modeling.py"))
+
+    # Clean up the original source file if `save_pretrained` copied it automatically
+    original_code_filename = os.path.basename(model_code_path)
+    spurious_file_path = os.path.join(local_output_dir, original_code_filename)
+    if os.path.exists(spurious_file_path):
+        logger.info(f"Removing redundant source file '{original_code_filename}' from deployment folder...")
+        os.remove(spurious_file_path)
 
     logger.info("Creating and writing model card (`README.md`)...")
     readme_content = create_model_card(hf_repo_id, base_model_name, special_tokens)
