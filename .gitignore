@@ -76,3 +76,8 @@ Icon
 
 # JetBrains
 .idea/
+
+# --- Data Files ---
+/dataset/*.json
+/dataset/raw_model_responses/**/*.json
+/dataset/processed_data/**/*.json
