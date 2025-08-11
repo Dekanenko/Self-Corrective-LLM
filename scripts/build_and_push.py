@@ -47,7 +47,7 @@ def create_model_card(repo_id: str, base_model: str, special_tokens: list) -> st
     # NOTE: It is your responsibility to use the correct license identifier for the base model.
     # For example, for Llama 3 8B Instruct, it is "meta-llama/llama-3-8b-instruct-license".
     # See the original model card on the Hub for the correct value.
-    license_identifier = "llama3.2" # <-- ADJUST AS NEEDED
+    license_identifier = "llama3.1" # <-- ADJUST AS NEEDED
 
     return f"""---
 license: {license_identifier}
@@ -152,6 +152,13 @@ def build_and_deploy(config_path: str):
     # required by the Hugging Face Hub convention for custom code.
     logger.info("Copying custom model code to the output directory as 'modeling.py'...")
     shutil.copy(model_code_path, os.path.join(local_output_dir, "modeling.py"))
+
+    # Clean up the original source file if `save_pretrained` copied it automatically
+    original_code_filename = os.path.basename(model_code_path)
+    spurious_file_path = os.path.join(local_output_dir, original_code_filename)
+    if os.path.exists(spurious_file_path):
+        logger.info(f"Removing redundant source file '{original_code_filename}' from deployment folder...")
+        os.remove(spurious_file_path)
 
     logger.info("Creating and writing model card (`README.md`)...")
     readme_content = create_model_card(hf_repo_id, base_model_name, special_tokens)
