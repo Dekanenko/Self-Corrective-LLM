@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import sys
+import gc
 from huggingface_hub import HfApi, login
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from dotenv import load_dotenv
@@ -25,7 +26,6 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Corrected Import: The module is 'modeling' inside the 'src' directory.
 from src.modeling import SelfCorrectiveLlama
 
 # --- Helper Functions ---
@@ -93,7 +93,7 @@ This model was programmatically converted and uploaded using a deployment script
 The code in `modeling.py` is licensed under the Apache 2.0 License. The model weights are subject to the original license of the base model.
 """
 
-def build_and_deploy(config_path: str):
+def build_and_push(config_path: str):
     """Main function to run the model conversion and deployment pipeline."""
     
     # 1. Load and Validate Configuration
@@ -119,7 +119,11 @@ def build_and_deploy(config_path: str):
 
     logger.info("Loading base tokenizer and model...")
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
-    base_model = AutoModelForCausalLM.from_pretrained(base_model_name)
+    base_model = AutoModelForCausalLM.from_pretrained(
+        base_model_name,
+        torch_dtype="auto",
+        device_map="auto"
+    )
 
     logger.info(f"Adding {len(special_tokens)} special tokens: {special_tokens}")
     tokenizer.add_special_tokens({'additional_special_tokens': special_tokens})
@@ -132,9 +136,18 @@ def build_and_deploy(config_path: str):
     SelfCorrectiveLlama.register_for_auto_class("AutoModelForCausalLM")
     custom_model = SelfCorrectiveLlama(base_model.config)
 
+    # Ensure the new model uses the same data type (e.g., bfloat16) as the base model
+    logger.info(f"Casting custom model to the base model's dtype: {base_model.dtype}")
+    custom_model = custom_model.to(base_model.dtype)
+
     logger.info("Loading state dict from base model into custom model...")
     incompatible_keys = custom_model.load_state_dict(base_model.state_dict(), strict=False)
     logger.info(f"State dict loaded. Mismatched keys (expected): {incompatible_keys}")
+    
+    # Explicitly free up memory by deleting the base model
+    logger.info("Base model state copied. Deleting base model to free up memory...")
+    del base_model
+    gc.collect()
     
     # 4. Prepare Local Directory for Deployment
     if os.path.exists(local_output_dir):
@@ -147,10 +160,7 @@ def build_and_deploy(config_path: str):
     tokenizer.save_pretrained(local_output_dir)
 
     # 5. Add Custom Code and Model Card
-    # This is the definitive step to ensure the correct modeling code is in the package.
-    # It copies the source file to the output directory, naming it 'modeling.py' as
-    # required by the Hugging Face Hub convention for custom code.
-    logger.info("Copying custom model code to the output directory as 'modeling.py'...")
+    logger.info("Copying custom model code (`modeling.py`) to the output directory...")
     shutil.copy(model_code_path, os.path.join(local_output_dir, "modeling.py"))
 
     # Clean up the original source file if `save_pretrained` copied it automatically
@@ -203,4 +213,4 @@ if __name__ == "__main__":
         help="Path to the deployment configuration JSON file."
     )
     args = parser.parse_args()
-    build_and_deploy(args.config)
+    build_and_push(args.config)
