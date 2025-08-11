@@ -1,0 +1,7 @@
+{"time":"2025-08-11T13:59:01.489821+03:00","level":"INFO","msg":"stream: starting","core version":"0.19.10","symlink path":"/Users/kyrylo/Programming/Uni/Masters/Self-Corrective LLM/notebooks/local_notebooks/wandb/run-20250811_135901-jy5hrxyu/logs/debug-core.log"}
+{"time":"2025-08-11T13:59:02.002826+03:00","level":"INFO","msg":"created new stream","id":"jy5hrxyu"}
+{"time":"2025-08-11T13:59:02.002853+03:00","level":"INFO","msg":"stream: started","id":"jy5hrxyu"}
+{"time":"2025-08-11T13:59:02.00287+03:00","level":"INFO","msg":"writer: Do: started","stream_id":"jy5hrxyu"}
+{"time":"2025-08-11T13:59:02.002883+03:00","level":"INFO","msg":"sender: started","stream_id":"jy5hrxyu"}
+{"time":"2025-08-11T13:59:02.002922+03:00","level":"INFO","msg":"handler: started","stream_id":"jy5hrxyu"}
+{"time":"2025-08-11T13:59:02.377976+03:00","level":"INFO","msg":"Starting system monitor"}

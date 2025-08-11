@@ -25,7 +25,8 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.self_corrective_llm import SelfCorrectiveLlama
+# Corrected Import: The module is 'modeling' inside the 'src' directory.
+from src.modeling import SelfCorrectiveLlama
 
 # --- Helper Functions ---
 
@@ -41,11 +42,15 @@ def hf_login():
     logger.info("Successfully logged in to Hugging Face Hub.")
 
 def create_model_card(repo_id: str, base_model: str, special_tokens: list) -> str:
-    # (Implementation remains the same as it was already clean)
     """Generates a professional README.md model card."""
     special_tokens_str = ", ".join(f"`{token}`" for token in special_tokens)
+    # NOTE: It is your responsibility to use the correct license identifier for the base model.
+    # For example, for Llama 3 8B Instruct, it is "meta-llama/llama-3-8b-instruct-license".
+    # See the original model card on the Hub for the correct value.
+    license_identifier = "llama3.2" # <-- ADJUST AS NEEDED
+
     return f"""---
-license: apache-2.0
+license: {license_identifier}
 language: en
 base_model: {base_model}
 ---
@@ -84,6 +89,8 @@ model = AutoModelForCausalLM.from_pretrained(
 ## Model Details
 
 This model was programmatically converted and uploaded using a deployment script. The custom class `SelfCorrectiveLlama` can be found in the `modeling.py` file.
+
+The code in `modeling.py` is licensed under the Apache 2.0 License. The model weights are subject to the original license of the base model.
 """
 
 def build_and_deploy(config_path: str):
@@ -140,7 +147,10 @@ def build_and_deploy(config_path: str):
     tokenizer.save_pretrained(local_output_dir)
 
     # 5. Add Custom Code and Model Card
-    logger.info("Copying custom model code (`modeling.py`) to the output directory...")
+    # This is the definitive step to ensure the correct modeling code is in the package.
+    # It copies the source file to the output directory, naming it 'modeling.py' as
+    # required by the Hugging Face Hub convention for custom code.
+    logger.info("Copying custom model code to the output directory as 'modeling.py'...")
     shutil.copy(model_code_path, os.path.join(local_output_dir, "modeling.py"))
 
     logger.info("Creating and writing model card (`README.md`)...")
