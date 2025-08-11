@@ -6,7 +6,6 @@ import argparse
 import shutil
 from huggingface_hub import snapshot_download
 
-# --- Professional Setup ---
 # Set up logging to provide clear, timestamped output.
 logging.basicConfig(
     level=logging.INFO,
