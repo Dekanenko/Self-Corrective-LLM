@@ -3,5 +3,5 @@
   "hf_repo_id": "MathBite/raw_self_corrective_llama_model",
   "local_output_dir": "self-corrective-llama_untrained",
   "special_tokens": ["<DEL_W>", "<DEL_S>", "<DEL_A>"],
-  "model_code_path": "src/self_corrective_llm.py"
+  "model_code_path": "src/modeling.py"
 }

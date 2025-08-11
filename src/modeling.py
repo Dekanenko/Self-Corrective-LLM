@@ -19,11 +19,19 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             nn.Sigmoid()
         )
 
-    def forward(self, input_ids, attention_mask=None, **kwargs):
+    def forward(
+        self, 
+        input_ids, 
+        attention_mask=None, 
+        labels=None, 
+        hallucination_labels=None, 
+        **kwargs
+    ):
+        kwargs["output_hidden_states"] = True
         outputs = super().forward(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            output_hidden_states=True,
+            # output_hidden_states=True,
             **kwargs
         )
 
@@ -32,7 +40,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         p_hall = self.hallucination_detector(last_hidden) # [batch, seq_len, 1]
 
         # Apply hallucination probability to the logits of the last 3 (special) tokens
-        logits = outputs.logits # [batch, seq_len, vocab_size]
+        logits = outputs.logits.clone() # [batch, seq_len, vocab_size]
         logits[:, :, -self.num_new_tokens:] = logits[:, :, -self.num_new_tokens:] * p_hall
 
         return SelfCorrectiveLlamaOutput(

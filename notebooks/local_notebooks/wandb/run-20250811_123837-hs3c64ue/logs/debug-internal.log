@@ -1,0 +1,7 @@
+{"time":"2025-08-11T12:38:37.823109+03:00","level":"INFO","msg":"stream: starting","core version":"0.19.10","symlink path":"/Users/kyrylo/Programming/Uni/Masters/Self-Corrective LLM/notebooks/local_notebooks/wandb/run-20250811_123837-hs3c64ue/logs/debug-core.log"}
+{"time":"2025-08-11T12:38:38.443471+03:00","level":"INFO","msg":"created new stream","id":"hs3c64ue"}
+{"time":"2025-08-11T12:38:38.443504+03:00","level":"INFO","msg":"stream: started","id":"hs3c64ue"}
+{"time":"2025-08-11T12:38:38.44351+03:00","level":"INFO","msg":"sender: started","stream_id":"hs3c64ue"}
+{"time":"2025-08-11T12:38:38.443535+03:00","level":"INFO","msg":"handler: started","stream_id":"hs3c64ue"}
+{"time":"2025-08-11T12:38:38.443515+03:00","level":"INFO","msg":"writer: Do: started","stream_id":"hs3c64ue"}
+{"time":"2025-08-11T12:38:38.820608+03:00","level":"INFO","msg":"Starting system monitor"}
