@@ -25,7 +25,8 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.self_corrective_llm import SelfCorrectiveLlama
+# Corrected Import: The module is 'modeling' inside the 'src' directory.
+from src.modeling import SelfCorrectiveLlama
 
 # --- Helper Functions ---
 
@@ -146,7 +147,10 @@ def build_and_deploy(config_path: str):
     tokenizer.save_pretrained(local_output_dir)
 
     # 5. Add Custom Code and Model Card
-    logger.info("Copying custom model code (`modeling.py`) to the output directory...")
+    # This is the definitive step to ensure the correct modeling code is in the package.
+    # It copies the source file to the output directory, naming it 'modeling.py' as
+    # required by the Hugging Face Hub convention for custom code.
+    logger.info("Copying custom model code to the output directory as 'modeling.py'...")
     shutil.copy(model_code_path, os.path.join(local_output_dir, "modeling.py"))
 
     # Clean up the original source file if `save_pretrained` copied it automatically
