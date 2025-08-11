@@ -1,7 +1,0 @@
-{"time":"2025-08-11T12:26:54.365115+03:00","level":"INFO","msg":"stream: starting","core version":"0.19.10","symlink path":"/Users/kyrylo/Programming/Uni/Masters/Self-Corrective LLM/notebooks/local_notebooks/wandb/run-20250811_122654-vxta211t/logs/debug-core.log"}
-{"time":"2025-08-11T12:26:54.982199+03:00","level":"INFO","msg":"created new stream","id":"vxta211t"}
-{"time":"2025-08-11T12:26:54.98224+03:00","level":"INFO","msg":"stream: started","id":"vxta211t"}
-{"time":"2025-08-11T12:26:54.982248+03:00","level":"INFO","msg":"writer: Do: started","stream_id":"vxta211t"}
-{"time":"2025-08-11T12:26:54.982282+03:00","level":"INFO","msg":"sender: started","stream_id":"vxta211t"}
-{"time":"2025-08-11T12:26:54.982261+03:00","level":"INFO","msg":"handler: started","stream_id":"vxta211t"}
-{"time":"2025-08-11T12:26:55.437834+03:00","level":"INFO","msg":"Starting system monitor"}
