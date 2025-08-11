@@ -26,7 +26,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from src.self_corrective_llm import SelfCorrectiveLlama
+from src.modeling import SelfCorrectiveLlama
 
 # --- Helper Functions ---
 
@@ -93,7 +93,7 @@ This model was programmatically converted and uploaded using a deployment script
 The code in `modeling.py` is licensed under the Apache 2.0 License. The model weights are subject to the original license of the base model.
 """
 
-def build_and_deploy(config_path: str):
+def build_and_push(config_path: str):
     """Main function to run the model conversion and deployment pipeline."""
     
     # 1. Load and Validate Configuration
@@ -206,4 +206,4 @@ if __name__ == "__main__":
         help="Path to the deployment configuration JSON file."
     )
     args = parser.parse_args()
-    build_and_deploy(args.config)
+    build_and_push(args.config)
