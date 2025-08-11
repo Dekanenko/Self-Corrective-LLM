@@ -2,6 +2,10 @@
 # Ignore downloaded model files
 model_s3_build/model/
 
+# --- Logging ---
+# Ignore logging directories like Weights & Biases
+wandb/
+
 # --- Python ---
 # Byte-compiled / optimized / C extensions
 __pycache__/

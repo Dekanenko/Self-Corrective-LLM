@@ -1,7 +1,0 @@
-{"time":"2025-08-11T12:46:14.422876+03:00","level":"INFO","msg":"stream: starting","core version":"0.19.10","symlink path":"/Users/kyrylo/Programming/Uni/Masters/Self-Corrective LLM/notebooks/local_notebooks/wandb/run-20250811_124614-c5epevhc/logs/debug-core.log"}
-{"time":"2025-08-11T12:46:15.02395+03:00","level":"INFO","msg":"created new stream","id":"c5epevhc"}
-{"time":"2025-08-11T12:46:15.024024+03:00","level":"INFO","msg":"stream: started","id":"c5epevhc"}
-{"time":"2025-08-11T12:46:15.024037+03:00","level":"INFO","msg":"writer: Do: started","stream_id":"c5epevhc"}
-{"time":"2025-08-11T12:46:15.024272+03:00","level":"INFO","msg":"handler: started","stream_id":"c5epevhc"}
-{"time":"2025-08-11T12:46:15.024557+03:00","level":"INFO","msg":"sender: started","stream_id":"c5epevhc"}
-{"time":"2025-08-11T12:46:15.359678+03:00","level":"INFO","msg":"Starting system monitor"}
