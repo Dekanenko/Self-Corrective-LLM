@@ -87,7 +87,7 @@ def main():
         eval_steps=50,
         save_strategy="steps",
         save_steps=50,
-        report_to="tensorboard",
+        report_to="wandb",
     )
 
     data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer)
