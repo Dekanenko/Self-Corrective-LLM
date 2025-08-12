@@ -90,5 +90,11 @@ class SelfCorrectionTrainer(Trainer):
         
         # --- 3. Combine the losses with your alpha weighting ---
         custom_loss = self.alpha * token_loss + (1 - self.alpha) * hallucination_loss
+
+        if self.state.is_local_process_zero:
+            self.log({
+                "token_loss": token_loss.item(),
+                "hallucination_loss": hallucination_loss.item(),
+            })
         
         return (custom_loss, outputs) if return_outputs else custom_loss
