@@ -78,10 +78,6 @@ def main():
     print("--- Prepare model for kbit training ---")
     model = prepare_model_for_kbit_training(model)
 
-    # print("--- Manually casting modules to bfloat16 ---")
-    # model.hallucination_detector = model.hallucination_detector.to(torch.bfloat16)
-    # model.lm_head = model.lm_head.to(torch.bfloat16)
-
     # 3. Configure PEFT/LoRA
     print("--- Configuring PEFT ---")
     peft_config = LoraConfig(
@@ -117,28 +113,6 @@ def main():
 
     # 5. Set up Trainer
     print("--- Setting up Trainer ---")
-    # training_args = TrainingArguments(
-    #     output_dir=args.model_dir,
-    #     num_train_epochs=args.epochs,
-    #     per_device_train_batch_size=args.train_batch_size,
-    #     per_device_eval_batch_size=args.eval_batch_size,
-    #     gradient_accumulation_steps=8,
-    #     optim="paged_adamw_8bit",
-    #     learning_rate=args.learning_rate,
-    #     weight_decay=0.01,
-    #     lr_scheduler_type="cosine",
-    #     bf16=True,
-    #     logging_dir=f"{args.output_data_dir}/logs",
-    #     logging_strategy="steps",
-    #     logging_steps=10,
-    #     eval_strategy="steps",
-    #     eval_steps=50,
-    #     save_strategy="steps",
-    #     save_steps=50,
-    #     report_to="wandb",
-    #     gradient_checkpointing=True,
-    # )
-
     training_args = TrainingArguments(
         output_dir=args.model_dir,
         num_train_epochs=args.epochs,
