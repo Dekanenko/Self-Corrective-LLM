@@ -9,8 +9,9 @@ from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     TrainingArguments,
+    BitsAndBytesConfig,
 )
-from peft import get_peft_model, LoraConfig, TaskType
+from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
 import datasets
 
 from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
@@ -30,64 +31,134 @@ def main():
     # A dedicated input channel for the base model.
     parser.add_argument("--base_model_path", type=str, default="/opt/ml/input/data/model")
 
-    # Custom hyperparameters
+    # Hyperparameters
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--train_batch_size", type=int, default=2)
     parser.add_argument("--eval_batch_size", type=int, default=2)
     parser.add_argument("--learning_rate", type=float, default=2e-4)
     parser.add_argument("--alpha", type=float, default=0.7)
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
+    parser.add_argument("--optim", type=str, default="paged_adamw_8bit")
+    parser.add_argument("--weight_decay", type=float, default=0.01)
+    parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
+    parser.add_argument("--logging_steps", type=int, default=10)
+    parser.add_argument("--eval_steps", type=int, default=50)
+    parser.add_argument("--save_steps", type=int, default=50)
+
+    # Exposing LoRA Config
+    parser.add_argument("--lora_r", type=int, default=16)
+    parser.add_argument("--lora_alpha", type=int, default=32)
+    parser.add_argument("--lora_dropout", type=float, default=0.05)
 
     args, _ = parser.parse_known_args()
 
     # 2. Load Tokenizer and Model
-    print("--- Loading tokenizer and model ---")
+    print("--- Loading tokenizer ---")
     tokenizer = AutoTokenizer.from_pretrained(args.base_model_path)
     tokenizer.pad_token = tokenizer.eos_token
+
+    # QLoRA configuration for 4-bit training
+    print("--- Loading BNB Config ---")
+    compute_dtype = getattr(torch, "bfloat16")
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=compute_dtype,
+        bnb_4bit_use_double_quant=True,
+        llm_int8_skip_modules=["hallucination_detector", "lm_head"],
+    )
+
+    print("--- Loading Model with BNB Config ---")
     model = AutoModelForCausalLM.from_pretrained(
         args.base_model_path,
+        quantization_config=bnb_config,
         trust_remote_code=True,
     )
+
+    print("--- Prepare model for kbit training ---")
+    model = prepare_model_for_kbit_training(model)
+
+    # print("--- Manually casting modules to bfloat16 ---")
+    # model.hallucination_detector = model.hallucination_detector.to(torch.bfloat16)
+    # model.lm_head = model.lm_head.to(torch.bfloat16)
 
     # 3. Configure PEFT/LoRA
     print("--- Configuring PEFT ---")
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.05,
+        r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
         bias="none",
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "lm_head"],
-        modules_to_save=["hallucination_detector"],
+        # Apply LoRA to the standard transformer blocks for memory efficiency.
+        target_modules=[
+            "q_proj", 
+            "k_proj", 
+            "v_proj", 
+            "o_proj", 
+            "gate_proj", 
+            "up_proj", 
+            "down_proj"
+        ],
+        # Fully fine-tune the lm_head and your custom detector.
+        # This is the correct way to train new tokens and custom modules.
+        modules_to_save=["lm_head", "hallucination_detector"],
     )
+    
+    print("--- Applying PEFT ---")
     peft_model = get_peft_model(model, peft_config)
     peft_model.print_trainable_parameters()
 
     # 4. Load Datasets from SageMaker's input channels
     print("--- Loading dataset ---")
-    dataset = datasets.load_from_disk(data_files=args.dataset_path)
+    dataset = datasets.load_from_disk(args.dataset_path)
+    print(dataset)
     train_dataset, eval_dataset = dataset["train"], dataset["test"]
 
     # 5. Set up Trainer
     print("--- Setting up Trainer ---")
+    # training_args = TrainingArguments(
+    #     output_dir=args.model_dir,
+    #     num_train_epochs=args.epochs,
+    #     per_device_train_batch_size=args.train_batch_size,
+    #     per_device_eval_batch_size=args.eval_batch_size,
+    #     gradient_accumulation_steps=8,
+    #     optim="paged_adamw_8bit",
+    #     learning_rate=args.learning_rate,
+    #     weight_decay=0.01,
+    #     lr_scheduler_type="cosine",
+    #     bf16=True,
+    #     logging_dir=f"{args.output_data_dir}/logs",
+    #     logging_strategy="steps",
+    #     logging_steps=10,
+    #     eval_strategy="steps",
+    #     eval_steps=50,
+    #     save_strategy="steps",
+    #     save_steps=50,
+    #     report_to="wandb",
+    #     gradient_checkpointing=True,
+    # )
+
     training_args = TrainingArguments(
         output_dir=args.model_dir,
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.train_batch_size,
         per_device_eval_batch_size=args.eval_batch_size,
-        gradient_accumulation_steps=8,
-        optim="paged_adamw_8bit",
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        optim=args.optim,
         learning_rate=args.learning_rate,
-        weight_decay=0.01,
-        lr_scheduler_type="cosine",
+        weight_decay=args.weight_decay,
+        lr_scheduler_type=args.lr_scheduler_type,
         bf16=True,
         logging_dir=f"{args.output_data_dir}/logs",
         logging_strategy="steps",
-        logging_steps=10,
+        logging_steps=args.logging_steps,
         evaluation_strategy="steps",
-        eval_steps=50,
+        eval_steps=args.eval_steps,
         save_strategy="steps",
-        save_steps=50,
+        save_steps=args.save_steps,
         report_to="wandb",
+        gradient_checkpointing=True,
     )
 
     data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer)
