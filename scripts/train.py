@@ -18,6 +18,16 @@ from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 
 # --- Main Training Function ---
 def main():
+    # --- Force Device Placement for PytorchDDP ---
+    # This is the crucial fix. We manually set the device for each process
+    # based on the LOCAL_RANK environment variable provided by torchrun.
+    # This overrides the faulty default behavior where all processes
+    # were piling onto GPU 0.
+    if "LOCAL_RANK" in os.environ:
+        local_rank = int(os.environ["LOCAL_RANK"])
+        if torch.cuda.is_available():
+            torch.cuda.set_device(local_rank)
+            
     # 1. Parse SageMaker-provided arguments
     parser = argparse.ArgumentParser()
 
@@ -66,7 +76,7 @@ def main():
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=compute_dtype,
         bnb_4bit_use_double_quant=True,
-        llm_int8_skip_modules=["hallucination_detector", "lm_head"],
+        llm_int8_skip_modules=["hallucination_detector"],
     )
 
     print("--- Loading Model with BNB Config ---")
@@ -95,11 +105,12 @@ def main():
             "o_proj", 
             "gate_proj", 
             "up_proj", 
-            "down_proj"
+            "down_proj",
+            "lm_head",
         ],
         # Fully fine-tune the lm_head and your custom detector.
         # This is the correct way to train new tokens and custom modules.
-        modules_to_save=["lm_head", "hallucination_detector"],
+        modules_to_save=["hallucination_detector"],
     )
     
     print("--- Applying PEFT ---")
@@ -134,6 +145,7 @@ def main():
         save_steps=args.save_steps,
         report_to="wandb",
         gradient_checkpointing=True,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
     )
 
     data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer)
