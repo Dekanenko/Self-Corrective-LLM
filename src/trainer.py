@@ -37,7 +37,7 @@ class SelfCorrectionDataCollator:
 
 
 class SelfCorrectionTrainer(Trainer):
-    def __init__(self, *args, alpha=0.5, **kwargs):
+    def __init__(self, *args, alpha=0.5, pos_weight=1.0, **kwargs):
         """
         A custom trainer that uses a weighted loss.
         
@@ -47,6 +47,7 @@ class SelfCorrectionTrainer(Trainer):
         """
         super().__init__(*args, **kwargs)
         self.alpha = alpha
+        self.pos_weight = pos_weight
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         # Pop the labels from the inputs dictionary so they aren't passed to the model
@@ -55,7 +56,7 @@ class SelfCorrectionTrainer(Trainer):
 
         outputs = model(**inputs)
         token_logits = outputs.get("logits")
-        hallucination_probs = outputs.get("p_hall")
+        hallucination_logits = outputs.get("hallucination_logits")
     
         # --- 1. Calculate Token Prediction Loss (Cross-Entropy) ---
         loss_fct_token = nn.CrossEntropyLoss(ignore_index=-100)
@@ -69,20 +70,21 @@ class SelfCorrectionTrainer(Trainer):
         token_loss = loss_fct_token(shift_logits, shift_labels)
 
         # --- 2. Calculate Hallucination Detection Loss (Binary Cross-Entropy) ---
-        loss_fct_hallucination = nn.BCELoss()
+        pos_weight_tensor = torch.tensor(self.pos_weight).to(token_logits.device)
+        loss_fct_hallucination = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
 
-        shift_hallucination_probs = hallucination_probs[..., :-1, :].contiguous().view(-1)
+        shift_hallucination_logits = hallucination_logits[..., :-1, :].contiguous().view(-1)
         shift_hallucination_labels = hallucination_labels[..., 1:].contiguous().view(-1)
-        shift_hallucination_labels = shift_hallucination_labels.to(shift_hallucination_probs.device)
+        shift_hallucination_labels = shift_hallucination_labels.to(shift_hallucination_logits.device)
         
         # Manually filter out the ignored indices (-100) for BCELoss.
         active_loss_mask = shift_hallucination_labels != -100
         
-        active_probs = shift_hallucination_probs[active_loss_mask]
+        active_logits = shift_hallucination_logits[active_loss_mask]
         active_labels = shift_hallucination_labels[active_loss_mask].float()
 
         if active_labels.numel() > 0:
-            hallucination_loss = loss_fct_hallucination(active_probs, active_labels)
+            hallucination_loss = loss_fct_hallucination(active_logits, active_labels)
         else:
             # If there are no active labels, the loss is 0 for this batch.
             # Ensure the loss tensor is on the correct device.

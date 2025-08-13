@@ -37,6 +37,7 @@ def main():
     parser.add_argument("--eval_batch_size", type=int, default=2)
     parser.add_argument("--learning_rate", type=float, default=2e-4)
     parser.add_argument("--alpha", type=float, default=0.7)
+    parser.add_argument("--pos_weight", type=float, default=1.0)
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
     parser.add_argument("--optim", type=str, default="paged_adamw_8bit")
     parser.add_argument("--weight_decay", type=float, default=0.01)
@@ -145,6 +146,7 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         alpha=args.alpha,
+        pos_weight=args.pos_weight,
     )
 
     # 6. Start Training
