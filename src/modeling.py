@@ -62,9 +62,9 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             outputs, model_kwargs, is_encoder_decoder, standardize_cache_format
         )
 
-        # If we are collecting p_hall values, check for the attribute on the model instance.
+        # If we are collecting hallucination_logits, check for the attribute on the model instance.
         if hasattr(self, "_hallucination_logits_outputs"):
-            # We take the p_hall from the *last* token in the sequence, which corresponds
+            # We take the hallucination_logits from the *last* token in the sequence, which corresponds
             # to the prediction for the *next* token being generated. This is critical.
             hallucination_logits_at_step = outputs.hallucination_logits[:, -1, :]
             self._hallucination_logits_outputs.append(hallucination_logits_at_step)
@@ -84,7 +84,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             # _update_model_kwargs_for_generation hook.
             sequences = super().generate(*args, **kwargs)
 
-            # Concatenate the collected p_hall values. This will have a length
+            # Concatenate the collected hallucination_logits values. This will have a length
             # equal to the number of generated tokens.
             hallucination_logits = torch.cat(self._hallucination_logits_outputs, dim=1)
                 
