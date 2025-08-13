@@ -2,9 +2,7 @@
 
 import argparse
 import os
-import sys
 import torch
-from functools import partial
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -19,8 +17,8 @@ from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 # --- Main Training Function ---
 def main():
     # --- Force Device Placement for PytorchDDP ---
-    # This is the crucial fix. We manually set the device for each process
-    # based on the LOCAL_RANK environment variable provided by torchrun.
+    # Manually set the device for each process based on the 
+    # LOCAL_RANK environment variable provided by torchrun.
     # This overrides the faulty default behavior where all processes
     # were piling onto GPU 0.
     if "LOCAL_RANK" in os.environ:
@@ -108,8 +106,7 @@ def main():
             "down_proj",
             "lm_head",
         ],
-        # Fully fine-tune the lm_head and your custom detector.
-        # This is the correct way to train new tokens and custom modules.
+        # Fully fine-tune the custom detector.
         modules_to_save=["hallucination_detector"],
     )
     
