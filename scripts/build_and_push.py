@@ -163,13 +163,6 @@ def build_and_push(config_path: str):
     logger.info("Copying custom model code (`modeling.py`) to the output directory...")
     shutil.copy(model_code_path, os.path.join(local_output_dir, "modeling.py"))
 
-    # Clean up the original source file if `save_pretrained` copied it automatically
-    original_code_filename = os.path.basename(model_code_path)
-    spurious_file_path = os.path.join(local_output_dir, original_code_filename)
-    if os.path.exists(spurious_file_path):
-        logger.info(f"Removing redundant source file '{original_code_filename}' from deployment folder...")
-        os.remove(spurious_file_path)
-
     logger.info("Creating and writing model card (`README.md`)...")
     readme_content = create_model_card(hf_repo_id, base_model_name, special_tokens)
     with open(os.path.join(local_output_dir, "README.md"), "w") as f:

@@ -1,5 +1,5 @@
 {
-    "model_id": "MathBite/self_corrective_llama_3.1_8B_model_untrained",
+    "model_id": "MathBite/self_corrective_llama_3.1_8B_untrained",
     "s3_bucket": "self-corrective-llm-data",
     "s3_key_prefix": "self-corrective-llm-not-trained"
 } 
