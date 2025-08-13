@@ -44,6 +44,7 @@ class SelfCorrectionTrainer(Trainer):
         Args:
             alpha (float): The weight for the token prediction loss. 
                            The hallucination loss will be weighted by (1 - alpha).
+            pos_weight (float): The positive weight for the BCE loss.
         """
         super().__init__(*args, **kwargs)
         self.alpha = alpha

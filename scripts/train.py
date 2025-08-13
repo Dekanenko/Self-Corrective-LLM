@@ -2,9 +2,7 @@
 
 import argparse
 import os
-import sys
 import torch
-from functools import partial
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -108,8 +106,7 @@ def main():
             "down_proj",
             "lm_head",
         ],
-        # Fully fine-tune the lm_head and your custom detector.
-        # This is the correct way to train new tokens and custom modules.
+        # Fully fine-tune the custom detector.
         modules_to_save=["hallucination_detector"],
     )
     

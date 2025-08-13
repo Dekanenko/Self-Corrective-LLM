@@ -47,7 +47,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             logits=logits,
             hallucination_logits=hallucination_logits,
             past_key_values=transformer_outputs.past_key_values,
-            hidden_states=None, # We no longer store all hidden states
+            hidden_states=None,
             attentions=transformer_outputs.attentions
         )
 
