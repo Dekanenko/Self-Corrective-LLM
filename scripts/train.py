@@ -19,8 +19,8 @@ from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 # --- Main Training Function ---
 def main():
     # --- Force Device Placement for PytorchDDP ---
-    # This is the crucial fix. We manually set the device for each process
-    # based on the LOCAL_RANK environment variable provided by torchrun.
+    # Manually set the device for each process based on the 
+    # LOCAL_RANK environment variable provided by torchrun.
     # This overrides the faulty default behavior where all processes
     # were piling onto GPU 0.
     if "LOCAL_RANK" in os.environ:

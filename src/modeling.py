@@ -24,31 +24,31 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         hallucination_labels=None, 
         **kwargs
     ):
-        kwargs["output_hidden_states"] = True
-        outputs = super().forward(
+        # 1. Get the last hidden state from the base transformer model.
+        transformer_outputs = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            # output_hidden_states=True,
             **kwargs
         )
+        last_hidden = transformer_outputs.last_hidden_state
 
-        # Get last hidden state and calculate hallucination probability
-        last_hidden = outputs.hidden_states[-1] # [batch, seq_len, hidden_size]
-        hallucination_logits = self.hallucination_detector(last_hidden) # [batch, seq_len, 1]
+        # 2. Calculate token logits and hallucination logits from the last hidden state.
+        logits = self.lm_head(last_hidden)
+        hallucination_logits = self.hallucination_detector(last_hidden)
 
-        # Apply hallucination probability to the logits of the last 3 (special) tokens
-        logits = outputs.logits
+        # 3. Modify the token logits.
         additional_logits = torch.zeros_like(logits)
         additional_logits[:, :, -self.num_new_tokens:] = hallucination_logits
         logits = logits + additional_logits
 
+        # 4. Return the custom output object.
         return SelfCorrectiveLlamaOutput(
-            loss=None, # Loss calculation should be handled by a custom Trainer
+            loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
             hallucination_logits=hallucination_logits,
-            past_key_values=outputs.past_key_values,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions
+            past_key_values=transformer_outputs.past_key_values,
+            hidden_states=None, # We no longer store all hidden states
+            attentions=transformer_outputs.attentions
         )
 
     def _update_model_kwargs_for_generation(
