@@ -140,6 +140,7 @@ def main():
         eval_steps=args.eval_steps,
         save_strategy="steps",
         save_steps=args.save_steps,
+        save_total_limit=3,
         report_to="wandb",
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},

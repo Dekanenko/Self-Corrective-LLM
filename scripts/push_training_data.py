@@ -6,9 +6,17 @@ import argparse
 import logging
 from typing import List, Dict, Any
 
+# --- Path Setup ---
+# This ensures the script can find the 'src' module by adding the project root
+# to the Python path. This must be done BEFORE importing from 'src'.
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfFolder
 from dotenv import load_dotenv
+from src.utils.dataset_tokenization import extract_deleted_text
 
 # --- Constants ---
 HUGGINGFACE_TOKEN_ENV_VAR = "HUGGINGFACE_TOKEN"
@@ -49,14 +57,23 @@ def format_single_sample(sample: Dict[str, Any]) -> List[Dict[str, Any]]:
     correct_response_index = 0
     for i, is_verified in enumerate(sample.get("verified_response_mask", [])):
         if is_verified:
-            formatted_samples.append({
-                "input": sample["input"],
-                "incorrect_response": sample["responses_to_correct"][i],
-                "errors": sample["errors_to_correct"][i],
-                "correct_response": sample["corrected_responses"][correct_response_index],
-                "additional_info": sample_kwargs,
-            })
-            correct_response_index += 1
+            hallucinated_text = []
+            for error in sample["errors_to_correct"][i]:
+                deleted_text = extract_deleted_text(error["correction"])
+                if deleted_text:
+                    hallucinated_text.append(deleted_text)
+
+            if hallucinated_text:
+                formatted_samples.append({
+                    "input": sample["input"],
+                    "incorrect_response": sample["responses_to_correct"][i],
+                    "errors": sample["errors_to_correct"][i],
+                    "hallucinated_text": hallucinated_text,
+                    "correct_response": sample["corrected_responses"][correct_response_index],
+                    "additional_info": sample_kwargs,
+                })
+                correct_response_index += 1
+
     return formatted_samples
 
 def process_dataset(raw_dataset: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -134,13 +151,6 @@ def main():
     parser.add_argument("--push_to_hub", action="store_true", help="Push the dataset to the Hugging Face Hub.")
     
     args = parser.parse_args()
-
-    # Set up project root path
-    # This makes the script runnable from anywhere
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-
     config_path = os.path.join(project_root, args.config)
     config = load_config(config_path)
     
