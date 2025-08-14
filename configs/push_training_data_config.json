@@ -3,5 +3,5 @@
     "context_qa_dataset_path": "dataset/processed_data/train/rajpurkar_squad_processed.json",
     "output_path": "dataset/train.json",
     "huggingface_repo": "MathBite/llama_wsa_self-correction",
-    "seed": 2
+    "seed": 42
 }
