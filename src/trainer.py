@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+from sklearn.metrics import f1_score
 
 @dataclass
 class SelfCorrectionDataCollator:
@@ -46,7 +47,7 @@ class SelfCorrectionTrainer(Trainer):
                            The hallucination loss will be weighted by (1 - alpha).
             pos_weight (float): The positive weight for the BCE loss.
         """
-        super().__init__(*args, **kwargs)
+        # super().__init__(*args, **kwargs)
         self.alpha = alpha
         self.pos_weight = pos_weight
         # A list to store component losses during evaluation
@@ -96,66 +97,28 @@ class SelfCorrectionTrainer(Trainer):
         # --- 3. Combine the losses with your alpha weighting ---
         custom_loss = self.alpha * token_loss + (1 - self.alpha) * hallucination_loss
 
-        if model.training:
-            # --- 4. Log aggregated losses in a distributed setting during training ---
-            if self.args.world_size > 1:
-                losses_to_reduce = torch.tensor([token_loss.detach(), hallucination_loss.detach()]).to(custom_loss.device)
-                torch.distributed.all_reduce(losses_to_reduce, op=torch.distributed.ReduceOp.AVG)
-                if self.state.is_local_process_zero:
-                    self.log({
-                        "token_loss": losses_to_reduce[0].item(),
-                        "hallucination_loss": losses_to_reduce[1].item(),
-                    })
+        # --- 4. Log Metrics (only on the main process) ---
+        if self.state.is_local_process_zero:
+            # During training, we only need to log the component losses.
+            if model.training:
+                self.log({
+                    "token_loss": token_loss.item(),
+                    "hallucination_loss": hallucination_loss.item(),
+                })
+            # During evaluation, we log the losses AND compute/log the F1 score.
             else:
-                if self.state.is_local_process_zero:
-                    self.log({
-                        "token_loss": token_loss.item(),
-                        "hallucination_loss": hallucination_loss.item(),
-                    })
-        else:
-            # --- During evaluation, just collect the losses on each device ---
-            self._eval_losses.append(
-                torch.tensor([token_loss.detach(), hallucination_loss.detach()])
-            )
+                preds = torch.sigmoid(active_logits) > 0.5
+                active_preds = preds.cpu().numpy().astype(int)
+                active_labels_np = active_labels.cpu().numpy().astype(int)
+
+                f1 = 0.0
+                if len(active_labels_np):
+                    f1 = f1_score(active_labels_np, active_preds, zero_division=0)
+                
+                self.log({
+                    "eval_token_loss": token_loss.item(),
+                    "eval_hallucination_loss": hallucination_loss.item(),
+                    "eval_f1_score": f1,
+                })
         
         return (custom_loss, outputs) if return_outputs else custom_loss
-
-    def evaluate(
-        self,
-        eval_dataset: Optional[torch.utils.data.Dataset] = None,
-        ignore_keys: Optional[List[str]] = None,
-        metric_key_prefix: str = "eval",
-    ) -> Dict[str, float]:
-        # Reset our loss collector at the beginning of evaluation
-        self._eval_losses = []
-
-        # Run the standard evaluation loop, which will populate self._eval_losses
-        eval_output = super().evaluate(eval_dataset, ignore_keys, metric_key_prefix)
-
-        # After the loop, self._eval_losses contains component losses from this process.
-        # In a distributed setting, we need to gather these from all processes.
-        if self.args.world_size > 1:
-            # This gathers lists of tensors from all GPUs. It's a list of lists.
-            all_gpu_losses = [None] * self.args.world_size
-            torch.distributed.all_gather_object(all_gpu_losses, self._eval_losses)
-            # Flatten the list of lists into a single list on the main process
-            if self.state.is_local_process_zero:
-                all_losses_list = [item for sublist in all_gpu_losses for item in sublist]
-            else:
-                all_losses_list = []
-        else:
-            all_losses_list = self._eval_losses
-
-        # Now, on the main process, calculate the mean of the collected losses
-        if self.state.is_local_process_zero and all_losses_list:
-            all_losses_tensor = torch.stack(all_losses_list)
-            mean_losses = all_losses_tensor.mean(dim=0)
-            
-            # Add our custom metrics to the output dictionary
-            eval_output.metrics[f"{metric_key_prefix}_token_loss"] = mean_losses[0].item()
-            eval_output.metrics[f"{metric_key_prefix}_hallucination_loss"] = mean_losses[1].item()
-        
-        # Clean up the collector for the next potential evaluation
-        self._eval_losses = []
-
-        return eval_output.metrics

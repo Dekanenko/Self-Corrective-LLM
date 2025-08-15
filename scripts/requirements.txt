@@ -1,2 +1,3 @@
 datasets==4.0.0
 wandb
+scikit-learn
