@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 from transformers import LlamaForCausalLM
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from dataclasses import dataclass
@@ -14,6 +15,11 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         super().__init__(config)
         
         self.num_new_tokens = 3
+
+        intermediate_size = config.intermediate_size
+        self.hallucination_gate_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
+        self.hallucination_up_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
+        self.hallucination_down_proj = nn.Linear(intermediate_size, config.hidden_size, bias=False)
         self.hallucination_detector = nn.Linear(config.hidden_size, 1)
     
     def forward(
@@ -34,7 +40,13 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
 
         # 2. Calculate token logits and hallucination logits from the last hidden state.
         logits = self.lm_head(last_hidden)
-        hallucination_logits = self.hallucination_detector(last_hidden)
+
+        gate_output = self.hallucination_gate_proj(last_hidden)
+        up_output = self.hallucination_up_proj(last_hidden)
+        gated_hidden = F.silu(gate_output) * up_output
+        detector_hidden = self.hallucination_down_proj(gated_hidden)
+
+        hallucination_logits = self.hallucination_detector(detector_hidden)
 
         # 3. Modify the token logits.
         additional_logits = torch.zeros_like(logits)

@@ -74,7 +74,12 @@ def main():
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=compute_dtype,
         bnb_4bit_use_double_quant=True,
-        llm_int8_skip_modules=["hallucination_detector"],
+        llm_int8_skip_modules=[
+            "hallucination_gate_proj",
+            "hallucination_up_proj",
+            "hallucination_down_proj",
+            "hallucination_detector"
+        ],
     )
 
     print("--- Loading Model with BNB Config ---")
@@ -107,7 +112,12 @@ def main():
             "lm_head",
         ],
         # Fully fine-tune the custom detector.
-        modules_to_save=["hallucination_detector"],
+        modules_to_save=[
+            "hallucination_gate_proj",
+            "hallucination_up_proj",
+            "hallucination_down_proj",
+            "hallucination_detector"
+        ],
     )
     
     print("--- Applying PEFT ---")
