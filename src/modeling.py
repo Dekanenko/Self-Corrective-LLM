@@ -62,26 +62,3 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             hidden_states=None,
             attentions=transformer_outputs.attentions
         )
-
-    def generate(self, *args, output_hallucination_logits: bool = False, **kwargs) -> Union[torch.LongTensor, Tuple[torch.LongTensor, torch.FloatTensor]]:
-        if not output_hallucination_logits:
-            # Default behavior: return only the generated token IDs
-            return super().generate(*args, **kwargs)
-
-        # Custom behavior: attach a temporary list to the model to collect outputs.
-        self._hallucination_logits_outputs = []
-
-        try:
-            # Call the original generate method. It will populate our list via the
-            # _update_model_kwargs_for_generation hook.
-            sequences = super().generate(*args, **kwargs)
-
-            # Concatenate the collected hallucination_logits values. This will have a length
-            # equal to the number of generated tokens.
-            hallucination_logits = torch.cat(self._hallucination_logits_outputs, dim=1)
-                
-            return (sequences, hallucination_logits)
-        finally:
-            # Crucial: clean up the temporary attribute afterwards to ensure the model
-            # state is clean for the next call.
-            del self._hallucination_logits_outputs
