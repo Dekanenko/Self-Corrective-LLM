@@ -58,6 +58,7 @@ def main():
     parser.add_argument("--lora_r", type=int, default=16)
     parser.add_argument("--lora_alpha", type=int, default=32)
     parser.add_argument("--lora_dropout", type=float, default=0.05)
+    parser.add_argument("--warmup_ratio", type=float, default=0.03, help="Linear warmup over warmup_ratio fraction of total steps.")
 
     args, _ = parser.parse_known_args()
 
@@ -142,6 +143,7 @@ def main():
         learning_rate=args.learning_rate,
         weight_decay=args.weight_decay,
         lr_scheduler_type=args.lr_scheduler_type,
+        warmup_ratio=args.warmup_ratio,
         bf16=True,
         logging_dir=f"{args.output_data_dir}/logs",
         logging_strategy="steps",
