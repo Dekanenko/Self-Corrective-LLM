@@ -63,26 +63,6 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             attentions=transformer_outputs.attentions
         )
 
-    def _update_model_kwargs_for_generation(
-        self,
-        outputs: SelfCorrectiveLlamaOutput,
-        model_kwargs: dict,
-        is_encoder_decoder: bool = False,
-        standardize_cache_format: bool = False,
-    ) -> dict:
-        model_kwargs = super()._update_model_kwargs_for_generation(
-            outputs, model_kwargs, is_encoder_decoder, standardize_cache_format
-        )
-
-        # If we are collecting hallucination_logits, check for the attribute on the model instance.
-        if hasattr(self, "_hallucination_logits_outputs"):
-            # We take the hallucination_logits from the *last* token in the sequence, which corresponds
-            # to the prediction for the *next* token being generated. This is critical.
-            hallucination_logits_at_step = outputs.hallucination_logits[:, -1, :]
-            self._hallucination_logits_outputs.append(hallucination_logits_at_step)
-            
-        return model_kwargs
-
     def generate(self, *args, output_hallucination_logits: bool = False, **kwargs) -> Union[torch.LongTensor, Tuple[torch.LongTensor, torch.FloatTensor]]:
         if not output_hallucination_logits:
             # Default behavior: return only the generated token IDs
