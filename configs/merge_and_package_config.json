@@ -1,0 +1,7 @@
+{
+    "base_model_path": "s3://self-corrective-llm-data/self-corrective-llm-not-trained",
+    "adapter_model_path": "s3://self-corrective-llm-data/trained_model/output/huggingface-pytorch-training-2025-08-16-11-29-50-421/output/model.tar.gz",
+    "final_output_dir": "./merged_self_corrective_llama",
+    "hf_repo_id": "MathBite/self_corrective_llama_3.1_8B",
+    "model_code_path": "src/modeling.py"
+}
