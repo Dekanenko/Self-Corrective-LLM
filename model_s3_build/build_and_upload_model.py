@@ -52,6 +52,7 @@ def main():
     s3_bucket = config["s3_bucket"]
     s3_key_prefix = config["s3_key_prefix"]
     inference_script_name = config["inference_script_name"]
+    requirements_file_name = config.get("requirements_file_name", "requirements.txt")  # Default to requirements.txt
     tarball_name = config["tarball_name"]
 
     # Define paths based on configuration
@@ -59,6 +60,8 @@ def main():
     local_model_path = os.path.join(script_dir, local_model_dir)
     cloned_repo_path = os.path.join(local_model_path, model_repo_name)
     inference_script_source_path = os.path.join(script_dir, inference_script_name)
+    requirements_file_source_path = os.path.join(script_dir, requirements_file_name)
+
 
     # Use a try...finally block to ensure cleanup happens even if a step fails
     try:
@@ -87,6 +90,14 @@ def main():
         destination_script_path = os.path.join(code_dir_path, inference_script_name)
         logging.info(f"Copying '{inference_script_source_path}' to '{destination_script_path}'")
         shutil.copy(inference_script_source_path, destination_script_path)
+
+        # Also copy the requirements.txt file
+        if os.path.exists(requirements_file_source_path):
+            destination_requirements_path = os.path.join(code_dir_path, requirements_file_name)
+            logging.info(f"Copying '{requirements_file_source_path}' to '{destination_requirements_path}'")
+            shutil.copy(requirements_file_source_path, destination_requirements_path)
+        else:
+            logging.warning(f"Requirements file not found at '{requirements_file_source_path}'. Skipping.")
 
         # --- 4. Create the Tarball ---
         logging.info(f"Creating tarball '{tarball_name}'...")
