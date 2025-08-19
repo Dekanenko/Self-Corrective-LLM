@@ -4,8 +4,12 @@ langchain-community == 0.3.27
 langchain-google-genai == 2.1.7 
 langchain-google-community == 2.0.7
 langgraph == 0.5.3
-transformers == 4.43.3
+tokenizers == 0.21.4 
+transformers == 4.55.2
 datasets == 2.19.2
+accelerate == 1.10.0
+bitsandbytes == 0.47.0
+peft == 0.17.0
 pyarrow == 17.0.0
 loguru == 0.7.2
 pydantic == 2.8.2
@@ -17,6 +21,7 @@ jupyter
 certifi==2024.7.4
 charset-normalizer==3.3.2
 huggingface_hub
+boto3 == 1.40.11
 idna==3.7
 numpy==1.26.4
 pandas==2.2.2

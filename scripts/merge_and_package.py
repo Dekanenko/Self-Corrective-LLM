@@ -100,6 +100,7 @@ def merge_and_package(config_path: str):
     final_output_dir = config["final_output_dir"]
     hf_repo_id = config["hf_repo_id"]
     model_code_path = config["model_code_path"]
+    base_model_name = config["base_model_name"]
 
     # Create a temporary directory within the project to ensure it's on the large volume
     project_tmp_dir = os.path.join(project_root, ".tmp_merge")
@@ -185,7 +186,9 @@ def merge_and_package(config_path: str):
             base_model_path,
             quantization_config=quantization_config,
             trust_remote_code=True,
+            # Use "auto" to automatically place the model on the available GPU.
             device_map="auto",
+            low_cpu_mem_usage=True,
         )
         
         tokenizer = AutoTokenizer.from_pretrained(base_model_path)
@@ -215,7 +218,7 @@ def merge_and_package(config_path: str):
         shutil.copy(model_code_path, os.path.join(final_output_dir, "modeling.py"))
 
         logger.info("Creating and writing model card...")
-        readme_content = create_model_card(hf_repo_id, base_model.config._name_or_path)
+        readme_content = create_model_card(hf_repo_id, base_model_name)
         with open(os.path.join(final_output_dir, "README.md"), "w") as f:
             f.write(readme_content)
 
