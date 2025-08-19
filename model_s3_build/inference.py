@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 
 log_level = os.environ.get("LOGLEVEL", "INFO").upper()
 logging.basicConfig(level=log_level)
@@ -10,18 +10,36 @@ logger = logging.getLogger(__name__)
 
 def model_fn(model_dir, context=None):
     """
-    Load the model and tokenizer from the model_dir.
+    Load the 4-bit quantized model and tokenizer.
     """
     logger.info("--- Starting model_fn ---")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Using device: {device}")
+
+    # The model was quantized, so we need to load it with the correct config.
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_use_double_quant=True,
+        llm_int8_skip_modules=[
+            "hallucination_gate_proj",
+            "hallucination_up_proj",
+            "hallucination_down_proj",
+            "hallucination_detector"
+        ],
+    )
     
-    logger.info("Loading model from pretrained...")
-    model = AutoModelForCausalLM.from_pretrained(model_dir, torch_dtype=torch.bfloat16)
-    logger.info("Model loaded. Moving to device...")
-    model.to(device)
+    logger.info("Loading 4-bit quantized model from pretrained...")
+    # Because this is a custom architecture, we must use trust_remote_code=True.
+    # device_map="auto" will automatically place the model on the available GPU.
+    model = AutoModelForCausalLM.from_pretrained(
+        model_dir,
+        quantization_config=quantization_config,
+        trust_remote_code=True,
+        device_map="auto",
+    )
+    logger.info("Model loaded.")
     model.eval()
-    logger.info("Model moved to device and set to eval mode.")
+    logger.info("Model set to eval mode.")
     
     logger.info("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
