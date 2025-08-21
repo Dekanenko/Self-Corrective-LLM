@@ -95,6 +95,47 @@ def add_deletion_instruction(input_text: str, special_instruction: str, insertio
 #     return model_inputs
 
 
+def assign_hallucination_labels(
+    item: dict, 
+    prompt_token_len: int,
+    del_w_token_id: int,
+    del_s_token_id: int,
+    del_a_token_id: int,
+):
+    hallucination_labels = item["hallucination_labels"]
+    i = prompt_token_len
+    while i < len(hallucination_labels):
+        if hallucination_labels[i] == 1:
+            j = i
+            while j < len(hallucination_labels) and hallucination_labels[j] == 1:
+                j += 1
+            
+            if j-1 != i:
+                if item["input_ids"][j-1] == del_s_token_id:
+                    hallucination_labels[i:j] = [2] * (j-i)
+                elif item["input_ids"][j-1] == del_a_token_id:
+                    hallucination_labels[i:j] = [3] * (j-i)
+                elif j-i > 2 and item["input_ids"][j-1] != del_w_token_id:
+                    hallucination_labels[i:j] = [2] * (j-i)
+            i = j
+        else:
+            i += 1
+        
+    for i in range(prompt_token_len, len(hallucination_labels)):
+        if hallucination_labels[i] != 0:
+            if item["input_ids"][i] == del_w_token_id:
+                hallucination_labels[i] = 1
+            elif item["input_ids"][i] == del_s_token_id:
+                hallucination_labels[i] = 2
+            elif item["input_ids"][i] == del_a_token_id:
+                for j in range(i, prompt_token_len-1, -1):
+                    if hallucination_labels[j] != 0 and (item["input_ids"][j] != del_w_token_id or item["input_ids"][j] != del_s_token_id):
+                        hallucination_labels[j] = 3
+            
+    item["hallucination_labels"] = hallucination_labels
+    return item
+
+
 def process_data(
     item: dict, 
     tokenizer: AutoTokenizer, 
@@ -188,8 +229,7 @@ def process_data(
     for text_to_find in item.get("hallucinated_text", []):
         if not text_to_find:
             continue
-
-        # cleaned_text = codecs.decode(text_to_find, 'unicode_escape')
+        
         try:
             cleaned_text = codecs.decode(text_to_find, 'unicode_escape')
         except UnicodeDecodeError as e:
@@ -302,4 +342,6 @@ def process_data(
     model_inputs["hallucination_labels"] = hallucination_labels
     del model_inputs["offset_mapping"]
 
-    return model_inputs
+    return assign_hallucination_labels(
+        model_inputs, prompt_token_len, del_w_token_id, del_s_token_id, del_a_token_id
+    )

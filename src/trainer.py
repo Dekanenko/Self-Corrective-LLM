@@ -38,25 +38,28 @@ class SelfCorrectionDataCollator:
 
 
 class SelfCorrectionTrainer(Trainer):
-    def __init__(self, *args, alpha=0.5, pos_weight=1.0, **kwargs):
+    def __init__(self, *args, alpha=0.5, correction_weights: List[float] = None, **kwargs):
         """
         A custom trainer that uses a weighted loss.
         
         Args:
             alpha (float): The weight for the token prediction loss. 
                            The hallucination loss will be weighted by (1 - alpha).
-            pos_weight (float): The positive weight for the BCE loss.
+            correction_weights (List[float]): A list of weights for the 4 correction classes 
+                                            (0: no-op, 1: del-w, 2: del-s, 3: del-a).
         """
         super().__init__(*args, **kwargs)
         self.alpha = alpha
-        self.pos_weight = pos_weight
-        # A list to store component losses during evaluation
-        self._eval_losses = []
+        # Convert the list of weights to a tensor and move it to the correct device.
+        if correction_weights:
+            self.correction_weight_tensor = torch.tensor(correction_weights)
+        else:
+            self.correction_weight_tensor = None
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        # Pop the labels from the inputs dictionary so they aren't passed to the model
-        token_labels = inputs.pop("labels")
-        hallucination_labels = inputs.pop("hallucination_labels")
+        # Get the labels from the inputs dictionary, but keep them to pass to the model
+        token_labels = inputs.get("labels")
+        hallucination_labels = inputs.get("hallucination_labels")
 
         outputs = model(**inputs)
         token_logits = outputs.get("logits")
@@ -73,52 +76,33 @@ class SelfCorrectionTrainer(Trainer):
         
         token_loss = loss_fct_token(shift_logits, shift_labels)
 
-        # --- 2. Calculate Hallucination Detection Loss (Binary Cross-Entropy) ---
-        pos_weight_tensor = torch.tensor(self.pos_weight).to(token_logits.device)
-        loss_fct_hallucination = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
-
-        shift_hallucination_logits = hallucination_logits[..., :-1, :].contiguous().view(-1)
-        shift_hallucination_labels = hallucination_labels[..., 1:].contiguous().view(-1)
-        shift_hallucination_labels = shift_hallucination_labels.to(shift_hallucination_logits.device)
+        # --- 2. Calculate Hallucination Detection Loss (Cross-Entropy) ---
+        # Move the weight tensor to the same device as the logits
+        if self.correction_weight_tensor is not None:
+            self.correction_weight_tensor = self.correction_weight_tensor.to(hallucination_logits.device)
+            
+        loss_fct_hallucination = nn.CrossEntropyLoss(
+            weight=self.correction_weight_tensor, 
+            ignore_index=-100
+        )
         
-        # Manually filter out the ignored indices (-100) for BCELoss.
-        active_loss_mask = shift_hallucination_labels != -100
+        shift_hallucination_logits = hallucination_logits[..., :-1, :].contiguous()
+        shift_hallucination_labels = hallucination_labels[..., 1:].contiguous()
         
-        active_logits = shift_hallucination_logits[active_loss_mask]
-        active_labels = shift_hallucination_labels[active_loss_mask].float()
-
-        if active_labels.numel() > 0:
-            hallucination_loss = loss_fct_hallucination(active_logits, active_labels)
-        else:
-            # If there are no active labels, the loss is 0 for this batch.
-            # Ensure the loss tensor is on the correct device.
-            hallucination_loss = torch.tensor(0.0).to(shift_logits.device)
+        num_correction_classes = shift_hallucination_logits.shape[-1]
+        shift_hallucination_logits = shift_hallucination_logits.view(-1, num_correction_classes)
+        shift_hallucination_labels = shift_hallucination_labels.view(-1).to(shift_hallucination_logits.device)
+        
+        hallucination_loss = loss_fct_hallucination(shift_hallucination_logits, shift_hallucination_labels)
         
         # --- 3. Combine the losses with your alpha weighting ---
         custom_loss = self.alpha * token_loss + (1 - self.alpha) * hallucination_loss
 
         # --- 4. Log Metrics (only on the main process) ---
         if self.state.is_local_process_zero:
-            # During training, we only need to log the component losses.
             if model.training:
                 self.log({
                     "token_loss": token_loss.item(),
                     "hallucination_loss": hallucination_loss.item(),
                 })
-            # During evaluation, we log the losses AND compute/log the F1 score.
-            else:
-                preds = torch.sigmoid(active_logits) > 0.5
-                active_preds = preds.cpu().numpy().astype(int)
-                active_labels_np = active_labels.cpu().numpy().astype(int)
-
-                f1 = 0.0
-                if len(active_labels_np):
-                    f1 = f1_score(active_labels_np, active_preds, zero_division=0)
-                
-                self.log({
-                    "eval_token_loss": token_loss.item(),
-                    "eval_hallucination_loss": hallucination_loss.item(),
-                    "eval_f1_score": f1,
-                })
-        
         return (custom_loss, outputs) if return_outputs else custom_loss
