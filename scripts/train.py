@@ -11,6 +11,7 @@ from transformers import (
 )
 from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
 import datasets
+import json
 
 from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 
@@ -45,7 +46,7 @@ def main():
     parser.add_argument("--eval_batch_size", type=int, default=2)
     parser.add_argument("--learning_rate", type=float, default=2e-4)
     parser.add_argument("--alpha", type=float, default=0.7)
-    parser.add_argument("--pos_weight", type=float, default=1.0)
+    parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0, 4.0, 1.0]')
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
     parser.add_argument("--optim", type=str, default="paged_adamw_8bit")
     parser.add_argument("--weight_decay", type=float, default=0.01)
@@ -55,12 +56,15 @@ def main():
     parser.add_argument("--save_steps", type=int, default=50)
 
     # Exposing LoRA Config
-    parser.add_argument("--lora_r", type=int, default=16)
+    parser.add_argument("--lora_r", type=int, default=8)
     parser.add_argument("--lora_alpha", type=int, default=32)
     parser.add_argument("--lora_dropout", type=float, default=0.05)
     parser.add_argument("--warmup_ratio", type=float, default=0.03, help="Linear warmup over warmup_ratio fraction of total steps.")
 
     args, _ = parser.parse_known_args()
+
+    # Parse the correction_weights from a JSON string
+    correction_weights = json.loads(args.correction_weights)
 
     # 2. Load Tokenizer and Model
     print("--- Loading tokenizer ---")
@@ -79,7 +83,9 @@ def main():
             "hallucination_gate_proj",
             "hallucination_up_proj",
             "hallucination_down_proj",
-            "hallucination_detector"
+            "hallucination_detector",
+            "embed_tokens",
+            "lm_head",
         ],
     )
 
@@ -110,14 +116,15 @@ def main():
             "gate_proj", 
             "up_proj", 
             "down_proj",
-            "lm_head",
         ],
         # Fully fine-tune the custom detector.
         modules_to_save=[
             "hallucination_gate_proj",
             "hallucination_up_proj",
             "hallucination_down_proj",
-            "hallucination_detector"
+            "hallucination_detector",
+            "embed_tokens",
+            "lm_head",
         ],
     )
     
@@ -125,13 +132,29 @@ def main():
     peft_model = get_peft_model(model, peft_config)
     peft_model.print_trainable_parameters()
 
-    # 4. Load Datasets from SageMaker's input channels
+    # 4. Apply custom Hook to Freeze Embedding Weights
+    print("--- Freezing Embedding Weights Except Special Tokens ---")
+    embedding_weights = peft_model.get_input_embeddings().weight
+    
+    # Get the number of special deletion tokens
+    num_special_tokens = peft_model.num_new_tokens
+
+    def freeze_non_special_embeddings_hook(grad):
+        new_grad = torch.zeros_like(grad)
+        if num_special_tokens > 0:
+            new_grad[-num_special_tokens:] = grad[-num_special_tokens:]
+        
+        return new_grad
+
+    embedding_weights.register_hook(freeze_non_special_embeddings_hook)
+
+    # 5. Load Datasets from SageMaker's input channels
     print("--- Loading dataset ---")
     dataset = datasets.load_from_disk(args.dataset_path)
     print(dataset)
     train_dataset, eval_dataset = dataset["train"], dataset["test"]
 
-    # 5. Set up Trainer
+    # 6. Set up Trainer
     print("--- Setting up Trainer ---")
     training_args = TrainingArguments(
         output_dir=args.model_dir,
@@ -168,7 +191,7 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         alpha=args.alpha,
-        pos_weight=args.pos_weight,
+        correction_weights=correction_weights,
     )
 
     # 6. Start Training

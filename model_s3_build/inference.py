@@ -83,6 +83,11 @@ def predict_fn(input_data, model_dict):
     parameters = input_data["parameters"]
     logger.info(f"Received {len(inputs)} inputs for prediction.")
 
+    # If temperature is set for sampling, we must also set do_sample=True unless it's explicitly provided.
+    if "temperature" in parameters and "do_sample" not in parameters:
+        logger.info("'temperature' is set, so enabling 'do_sample=True' for generation.")
+        parameters["do_sample"] = True
+
     logger.debug("Tokenizing inputs...")
     inputs = tokenizer(
         text=inputs, 
