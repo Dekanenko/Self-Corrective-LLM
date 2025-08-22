@@ -79,7 +79,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # Concatenate to get logits over the full, expanded vocabulary.
         logits = torch.cat([main_logits, new_logits], dim=-1)
 
-        # 4. SwiGLU-based hallucination detector (logic is unchanged).
+        # 4. SwiGLU-based hallucination detector.
         gate_output = self.hallucination_gate_proj(last_hidden)
         up_output = self.hallucination_up_proj(last_hidden)
         gated_hidden = F.silu(gate_output) * up_output
