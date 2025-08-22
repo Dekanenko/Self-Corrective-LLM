@@ -16,10 +16,10 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         self.num_new_tokens = 3
         self.original_vocab_size = config.vocab_size
 
-        # Create a new, small embedding layer for only the special tokens.
+        # Create a new, small embedding layer for only the special tokens
         self.new_token_embeddings = nn.Embedding(self.num_new_tokens, config.hidden_size)
 
-        # --- Initialize new embeddings with the mean of the original ones ---
+        # Initialize new embeddings with the mean of the original ones
         with torch.no_grad():
             original_embeddings = self.model.embed_tokens.weight
             mean_embeddings = original_embeddings.mean(dim=0)
@@ -41,8 +41,8 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         hallucination_labels=None, 
         **kwargs
     ):
-        # 1. Manually construct the input embeddings.
-        # This allows us to use a separate embedding layer for our new tokens, saving memory.
+        # 1. Manually construct the input embeddings
+        # This allows us to use a separate embedding layer for our new tokens, saving memory
         special_token_mask = input_ids >= self.original_vocab_size
 
         if not special_token_mask.any():
@@ -60,8 +60,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             special_embeds = self.new_token_embeddings(special_ids)
             inputs_embeds[special_token_mask] = special_embeds
 
-        # 2. Pass the constructed embeddings through the base transformer model.
-        # Note: We pass `inputs_embeds` directly, so the model skips its own embedding layer.
+        # 2. Pass the constructed embeddings through the base transformer model
         kwargs["inputs_embeds"] = inputs_embeds
         transformer_outputs = self.model(
             attention_mask=attention_mask,
@@ -69,17 +68,17 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         )
         last_hidden = transformer_outputs.last_hidden_state
 
-        # 3. Calculate token logits by combining outputs from both heads.
-        # Main logits from the original, frozen lm_head.
+        # 3. Calculate token logits by combining outputs from both heads
+        # Main logits from the original, frozen lm_head
         main_logits = self.lm_head(last_hidden)
 
-        # New token logits from small, trainable embedding layer.
+        # New token logits from small, trainable embedding layer
         new_logits = F.linear(last_hidden, self.new_token_embeddings.weight)
 
-        # Concatenate to get logits over the full, expanded vocabulary.
+        # Concatenate to get logits over the full, expanded vocabulary
         logits = torch.cat([main_logits, new_logits], dim=-1)
 
-        # 4. SwiGLU-based hallucination detector.
+        # 4. SwiGLU-based hallucination detector
         gate_output = self.hallucination_gate_proj(last_hidden)
         up_output = self.hallucination_up_proj(last_hidden)
         gated_hidden = F.silu(gate_output) * up_output
@@ -92,33 +91,33 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         deletion_logits = all_hallucination_logits[..., 1:] # skip the first token (no hallucination)
         additional_logits = torch.zeros_like(logits)
 
-        # Conditionally add the deletion logits if we are in training and labels are provided.
+        # Conditionally add the deletion logits if we are in training and labels are provided
         if hallucination_labels is not None and labels is not None:
-            # Condition 1: The hallucination label is 0 (no hallucination).
+            # Condition 1: The hallucination label is 0 (no hallucination)
             mask_no_hallucination = (hallucination_labels == 0)
 
             # Condition 2: The next token is one of the deletion tokens.
-            # Check if the token ID is within the range of the last `num_new_tokens` in the vocab.
+            # Check if the token ID is within the range of the last `num_new_tokens` in the vocab
             vocab_size = logits.shape[-1]
             mask_is_deletion_token = (labels >= (vocab_size - self.num_new_tokens)) & (labels < vocab_size)
 
-            # Combine the masks. The addition happens if either condition is true.
-            # We need to align the shapes for broadcasting.
+            # Combine the masks. The addition happens if either condition is true
+            # We need to align the shapes for broadcasting
             combined_mask = (mask_no_hallucination | mask_is_deletion_token).unsqueeze(-1)
 
-            # Use the mask to conditionally apply the deletion logits.
+            # Use the mask to conditionally apply the deletion logits
             additional_logits[:, :, -self.num_new_tokens:] = torch.where(
                 combined_mask,
                 deletion_logits,
                 torch.zeros_like(deletion_logits)
             )
         else:
-            # Inference case: always add the deletion logits to the token logits.
+            # Inference case: always add the deletion logits to the token logits
             additional_logits[:, :, -self.num_new_tokens:] = deletion_logits
 
         logits = logits + additional_logits
 
-        # 6. Return the custom output object.
+        # 6. Return the custom output object
         return SelfCorrectiveLlamaOutput(
             loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
