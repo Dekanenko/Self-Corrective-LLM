@@ -121,8 +121,8 @@ def build_and_push(config_path: str):
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
     base_model = AutoModelForCausalLM.from_pretrained(
         base_model_name,
-        # torch_dtype="auto",
-        # device_map="auto"
+        torch_dtype="auto",
+        device_map="auto"
     )
 
     logger.info(f"Adding {len(special_tokens)} special tokens: {special_tokens}")
@@ -165,31 +165,31 @@ def build_and_push(config_path: str):
     with open(os.path.join(local_output_dir, "README.md"), "w") as f:
         f.write(readme_content)
 
-    # # 6. Deploy to Hugging Face Hub
-    # logger.info(f"Deploying model to Hugging Face Hub at repository: {hf_repo_id}")
-    # api = HfApi()
+    # 6. Deploy to Hugging Face Hub
+    logger.info(f"Deploying model to Hugging Face Hub at repository: {hf_repo_id}")
+    api = HfApi()
     
-    # logger.info("Creating repository on the Hub (if it doesn't exist)...")
-    # api.create_repo(repo_id=hf_repo_id, repo_type="model", exist_ok=True)
+    logger.info("Creating repository on the Hub (if it doesn't exist)...")
+    api.create_repo(repo_id=hf_repo_id, repo_type="model", exist_ok=True)
 
-    # logger.info(f"Uploading contents of {local_output_dir} to {hf_repo_id}...")
-    # api.upload_folder(
-    #     folder_path=local_output_dir,
-    #     repo_id=hf_repo_id,
-    #     repo_type="model",
-    #     commit_message="Initial model conversion and upload."
-    # )
+    logger.info(f"Uploading contents of {local_output_dir} to {hf_repo_id}...")
+    api.upload_folder(
+        folder_path=local_output_dir,
+        repo_id=hf_repo_id,
+        repo_type="model",
+        commit_message="Initial model conversion and upload."
+    )
 
-    # logger.info("Upload to Hugging Face Hub complete.")
-    # logger.info(f"Model is available at: https://huggingface.co/{hf_repo_id}")
+    logger.info("Upload to Hugging Face Hub complete.")
+    logger.info(f"Model is available at: https://huggingface.co/{hf_repo_id}")
 
-    # # 7. Final Cleanup
-    # logger.info(f"Cleaning up local staging directory: {local_output_dir}")
-    # try:
-    #     shutil.rmtree(local_output_dir)
-    #     logger.info("Local directory successfully removed.")
-    # except OSError as e:
-    #     logger.error(f"Error removing local directory {local_output_dir}: {e.strerror}")
+    # 7. Final Cleanup
+    logger.info(f"Cleaning up local staging directory: {local_output_dir}")
+    try:
+        shutil.rmtree(local_output_dir)
+        logger.info("Local directory successfully removed.")
+    except OSError as e:
+        logger.error(f"Error removing local directory {local_output_dir}: {e.strerror}")
 
     logger.info("Build and deploy pipeline finished successfully!")
 
