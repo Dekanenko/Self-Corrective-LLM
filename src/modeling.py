@@ -14,6 +14,18 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         super().__init__(config)
         
         self.num_new_tokens = 3
+        self.original_vocab_size = config.vocab_size
+
+        # Create a new, small embedding layer for only the special tokens.
+        self.new_token_embeddings = nn.Embedding(self.num_new_tokens, config.hidden_size)
+
+        # --- Initialize new embeddings with the mean of the original ones ---
+        with torch.no_grad():
+            original_embeddings = self.model.embed_tokens.weight
+            mean_embeddings = original_embeddings.mean(dim=0)
+            self.new_token_embeddings.weight.data.copy_(
+                mean_embeddings.unsqueeze(0).expand(self.num_new_tokens, -1)
+            )
 
         intermediate_size = config.intermediate_size
         self.hallucination_gate_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
@@ -29,19 +41,51 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         hallucination_labels=None, 
         **kwargs
     ):
-        # 1. Get the last hidden state from the base transformer model.
+        # 1. Manually construct the input embeddings.
+        # This allows us to use a separate embedding layer for our new tokens, saving memory.
+        special_token_mask = input_ids >= self.original_vocab_size
+        print(f"special_token_mask:\n{special_token_mask}")
+
+        if not special_token_mask.any():
+            inputs_embeds = self.model.embed_tokens(input_ids)
+        else:
+            normal_token_mask = ~special_token_mask
+            normal_ids = input_ids.clone()
+            normal_ids[special_token_mask] = 0
+            print(f"normal_ids:\n{normal_ids}")
+            normal_embeds = self.model.embed_tokens(normal_ids)
+            
+            inputs_embeds = torch.empty_like(normal_embeds)
+            inputs_embeds[normal_token_mask] = normal_embeds[normal_token_mask]
+
+            special_ids = input_ids[special_token_mask] - self.original_vocab_size
+            print(f"special_ids:\n{special_ids}")
+            special_embeds = self.new_token_embeddings(special_ids)
+            print(f"special_embeds:\n{special_embeds.shape}")
+            inputs_embeds[special_token_mask] = special_embeds
+
+        # 2. Pass the constructed embeddings through the base transformer model.
+        # Note: We pass `inputs_embeds` directly, so the model skips its own embedding layer.
+        kwargs["inputs_embeds"] = inputs_embeds
         transformer_outputs = self.model(
-            input_ids=input_ids,
             attention_mask=attention_mask,
             **kwargs
         )
         last_hidden = transformer_outputs.last_hidden_state
 
-        # 2. Calculate token logits and hallucination logits from the last hidden state.
-        # Token logits
-        logits = self.lm_head(last_hidden)
+        # 3. Calculate token logits by combining outputs from both heads.
+        # Main logits from the original, frozen lm_head.
+        main_logits = self.lm_head(last_hidden)
+        print(f"main_logits:\n{main_logits}")
+        # New token logits from our small, trainable embedding layer.
+        new_logits = F.linear(last_hidden, self.new_token_embeddings.weight)
+        print(f"new_logits:\n{new_logits}")
 
-        # SwiGLU-based hallucination detector
+        # Concatenate to get logits over the full, expanded vocabulary.
+        logits = torch.cat([main_logits, new_logits], dim=-1)
+        print(f"logits:\n{logits}")
+
+        # 4. SwiGLU-based hallucination detector (logic is unchanged).
         gate_output = self.hallucination_gate_proj(last_hidden)
         up_output = self.hallucination_up_proj(last_hidden)
         gated_hidden = F.silu(gate_output) * up_output
@@ -50,7 +94,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # Hallucination logits
         all_hallucination_logits = self.hallucination_detector(detector_hidden)
 
-        # 3. Modify the token logits conditionally.
+        # 5. Modify the token logits conditionally.
         deletion_logits = all_hallucination_logits[..., 1:] # skip the first token (no hallucination)
         additional_logits = torch.zeros_like(logits)
 
@@ -80,7 +124,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
 
         logits = logits + additional_logits
 
-        # 4. Return the custom output object.
+        # 6. Return the custom output object.
         return SelfCorrectiveLlamaOutput(
             loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
