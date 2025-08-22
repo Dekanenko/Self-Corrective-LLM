@@ -44,7 +44,6 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # 1. Manually construct the input embeddings.
         # This allows us to use a separate embedding layer for our new tokens, saving memory.
         special_token_mask = input_ids >= self.original_vocab_size
-        print(f"special_token_mask:\n{special_token_mask}")
 
         if not special_token_mask.any():
             inputs_embeds = self.model.embed_tokens(input_ids)
@@ -52,16 +51,13 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             normal_token_mask = ~special_token_mask
             normal_ids = input_ids.clone()
             normal_ids[special_token_mask] = 0
-            print(f"normal_ids:\n{normal_ids}")
             normal_embeds = self.model.embed_tokens(normal_ids)
             
             inputs_embeds = torch.empty_like(normal_embeds)
             inputs_embeds[normal_token_mask] = normal_embeds[normal_token_mask]
 
             special_ids = input_ids[special_token_mask] - self.original_vocab_size
-            print(f"special_ids:\n{special_ids}")
             special_embeds = self.new_token_embeddings(special_ids)
-            print(f"special_embeds:\n{special_embeds.shape}")
             inputs_embeds[special_token_mask] = special_embeds
 
         # 2. Pass the constructed embeddings through the base transformer model.
@@ -76,14 +72,12 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # 3. Calculate token logits by combining outputs from both heads.
         # Main logits from the original, frozen lm_head.
         main_logits = self.lm_head(last_hidden)
-        print(f"main_logits:\n{main_logits}")
-        # New token logits from our small, trainable embedding layer.
+
+        # New token logits from small, trainable embedding layer.
         new_logits = F.linear(last_hidden, self.new_token_embeddings.weight)
-        print(f"new_logits:\n{new_logits}")
 
         # Concatenate to get logits over the full, expanded vocabulary.
         logits = torch.cat([main_logits, new_logits], dim=-1)
-        print(f"logits:\n{logits}")
 
         # 4. SwiGLU-based hallucination detector (logic is unchanged).
         gate_output = self.hallucination_gate_proj(last_hidden)
