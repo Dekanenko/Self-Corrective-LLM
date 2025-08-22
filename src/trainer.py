@@ -106,9 +106,9 @@ class SelfCorrectionTrainer(Trainer):
                     "hallucination_loss": hallucination_loss.item(),
                 }
             else:
-                active_labels_mask = flat_hallucination_labels != -100
-                active_preds = torch.argmax(flat_hallucination_logits, dim=-1)[active_labels_mask]
-                active_labels = flat_hallucination_labels[active_labels_mask]
+                active_labels_mask = shift_hallucination_labels != -100
+                active_preds = torch.argmax(shift_hallucination_logits, dim=-1)[active_labels_mask]
+                active_labels = shift_hallucination_labels[active_labels_mask]
 
                 self._eval_accumulator["token_losses"].append(token_loss.item())
                 self._eval_accumulator["hallucination_losses"].append(hallucination_loss.item())
