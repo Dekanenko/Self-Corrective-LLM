@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import json
 import torch
 from transformers import (
     AutoTokenizer,
@@ -11,7 +12,6 @@ from transformers import (
 )
 from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
 import datasets
-import ast
 
 from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 
@@ -65,7 +65,7 @@ def main():
     args, _ = parser.parse_known_args()
 
     # Parse the correction_weights from a JSON string
-    correction_weights = ast.literal_eval(args.correction_weights)
+    correction_weights = json.loads(args.correction_weights)
 
     # 2. Load Tokenizer and Model
     print("--- Loading tokenizer ---")
