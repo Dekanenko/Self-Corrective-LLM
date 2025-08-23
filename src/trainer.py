@@ -13,6 +13,7 @@ class SelfCorrectionDataCollator:
     and pads `labels` and our custom `hallucination_labels` with -100.
     """
     tokenizer: PreTrainedTokenizerBase
+    max_sequence_length: Optional[int] = None
     label_pad_token_id: int = -100
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -22,6 +23,9 @@ class SelfCorrectionDataCollator:
         batch = self.tokenizer.pad(
             features,
             return_tensors="pt",
+            padding="longest",
+            max_length=self.max_sequence_length,
+            truncation=True if self.max_sequence_length is not None else False,
         )
 
         max_length = batch['input_ids'].shape[1]
@@ -117,20 +121,24 @@ class SelfCorrectionTrainer(Trainer):
         
         return (custom_loss, outputs) if return_outputs else custom_loss
 
-    def log(self, logs: Dict[str, float], **kwargs) -> None:
+    def log(self, logs: Dict[str, float], *args, **kwargs) -> None:
         if self.state.is_local_process_zero and 'loss' in logs:
             logs.update(self._last_component_losses)
-        super().log(logs, **kwargs)
+        super().log(logs, *args, **kwargs)
 
     def evaluate(self, eval_dataset=None, ignore_keys=None, metric_key_prefix: str = "eval"):
+        # The dataloader needs to be created from the dataset.
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        
         self._eval_accumulator = {
             "token_losses": [], "hallucination_losses": [], "preds": [], "labels": [],
         }
 
+        # Pass the dataloader to the evaluation loop
         output = self.evaluation_loop(
-            eval_dataset,
+            eval_dataloader,
             description="Evaluation",
-            prediction_loss_only=None,
+            prediction_loss_only=True,
             ignore_keys=ignore_keys,
             metric_key_prefix=metric_key_prefix,
         )
@@ -151,4 +159,4 @@ class SelfCorrectionTrainer(Trainer):
         
         self.log(output.metrics)
         self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, output.metrics)
-        return output
+        return output.metrics
