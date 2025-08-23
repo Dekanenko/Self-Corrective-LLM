@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import json
 import torch
 from transformers import (
     AutoTokenizer,
@@ -11,7 +12,6 @@ from transformers import (
 )
 from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
 import datasets
-import json
 
 from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 
@@ -54,6 +54,7 @@ def main():
     parser.add_argument("--logging_steps", type=int, default=10)
     parser.add_argument("--eval_steps", type=int, default=50)
     parser.add_argument("--save_steps", type=int, default=50)
+    parser.add_argument("--max_sequence_length", type=int, default=800, help="Maximum sequence length for padding and truncation.")
 
     # Exposing LoRA Config
     parser.add_argument("--lora_r", type=int, default=8)
@@ -163,9 +164,10 @@ def main():
         report_to="wandb",
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
+        label_names=["labels", "hallucination_labels"],
     )
 
-    data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer)
+    data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer, max_sequence_length=args.max_sequence_length)
 
     trainer = SelfCorrectionTrainer(
         model=peft_model,
