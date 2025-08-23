@@ -117,10 +117,10 @@ class SelfCorrectionTrainer(Trainer):
         
         return (custom_loss, outputs) if return_outputs else custom_loss
 
-    def log(self, logs: Dict[str, float]) -> None:
+    def log(self, logs: Dict[str, float], **kwargs) -> None:
         if self.state.is_local_process_zero and 'loss' in logs:
             logs.update(self._last_component_losses)
-        super().log(logs)
+        super().log(logs, **kwargs)
 
     def evaluate(self, eval_dataset=None, ignore_keys=None, metric_key_prefix: str = "eval"):
         self._eval_accumulator = {
