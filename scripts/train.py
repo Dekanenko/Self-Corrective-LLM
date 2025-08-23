@@ -84,8 +84,7 @@ def main():
             "hallucination_up_proj",
             "hallucination_down_proj",
             "hallucination_detector",
-            "embed_tokens",
-            "lm_head",
+            "new_token_embeddings",
         ],
     )
 
@@ -116,6 +115,8 @@ def main():
             "gate_proj", 
             "up_proj", 
             "down_proj",
+            "embed_tokens",
+            "lm_head",
         ],
         # Fully fine-tune the custom detector.
         modules_to_save=[
@@ -123,8 +124,7 @@ def main():
             "hallucination_up_proj",
             "hallucination_down_proj",
             "hallucination_detector",
-            "embed_tokens",
-            "lm_head",
+            "new_token_embeddings"
         ],
     )
     
@@ -132,29 +132,13 @@ def main():
     peft_model = get_peft_model(model, peft_config)
     peft_model.print_trainable_parameters()
 
-    # 4. Apply custom Hook to Freeze Embedding Weights
-    print("--- Freezing Embedding Weights Except Special Tokens ---")
-    embedding_weights = peft_model.get_input_embeddings().weight
-    
-    # Get the number of special deletion tokens
-    num_special_tokens = peft_model.num_new_tokens
-
-    def freeze_non_special_embeddings_hook(grad):
-        new_grad = torch.zeros_like(grad)
-        if num_special_tokens > 0:
-            new_grad[-num_special_tokens:] = grad[-num_special_tokens:]
-        
-        return new_grad
-
-    embedding_weights.register_hook(freeze_non_special_embeddings_hook)
-
-    # 5. Load Datasets from SageMaker's input channels
+    # 4. Load Datasets from SageMaker's input channels
     print("--- Loading dataset ---")
     dataset = datasets.load_from_disk(args.dataset_path)
     print(dataset)
     train_dataset, eval_dataset = dataset["train"], dataset["test"]
 
-    # 6. Set up Trainer
+    # 5. Set up Trainer
     print("--- Setting up Trainer ---")
     training_args = TrainingArguments(
         output_dir=args.model_dir,

@@ -127,9 +127,6 @@ def build_and_push(config_path: str):
 
     logger.info(f"Adding {len(special_tokens)} special tokens: {special_tokens}")
     tokenizer.add_special_tokens({'additional_special_tokens': special_tokens})
-    
-    logger.info("Resizing token embeddings of the base model...")
-    base_model.resize_token_embeddings(len(tokenizer))
 
     logger.info("Creating instance of the custom SelfCorrectiveLlama model...")
     # This is a critical step for Hub integration
