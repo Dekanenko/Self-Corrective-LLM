@@ -20,12 +20,20 @@ class SelfCorrectionDataCollator:
         labels = [feature.pop("labels") for feature in features]
         hallucination_labels = [feature.pop("hallucination_labels") for feature in features]
 
+        # Manually truncate if a max length is provided.
+        if self.max_sequence_length is not None:
+            for i in range(len(features)):
+                # Truncate the features that are lists
+                for key in features[i]:
+                    if isinstance(features[i][key], list):
+                        features[i][key] = features[i][key][:self.max_sequence_length]
+                # Truncate the labels we popped earlier
+                labels[i] = labels[i][:self.max_sequence_length]
+                hallucination_labels[i] = hallucination_labels[i][:self.max_sequence_length]
+
         batch = self.tokenizer.pad(
             features,
             return_tensors="pt",
-            padding="longest",
-            max_length=self.max_sequence_length,
-            truncation=True if self.max_sequence_length is not None else False,
         )
 
         max_length = batch['input_ids'].shape[1]
