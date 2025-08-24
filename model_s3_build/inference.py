@@ -108,7 +108,7 @@ def predict_fn(input_data, model_dict):
         
     logger.debug("Decoding responses...")
     input_ids_len = inputs["input_ids"].shape[-1]
-    responses = tokenizer.batch_decode(outputs[:, input_ids_len:], skip_special_tokens=True)
+    responses = tokenizer.batch_decode(outputs[:, input_ids_len:], skip_special_tokens=False)
     logger.debug(f"Decoded {len(responses)} responses.")
     
     logger.info("--- predict_fn complete ---")
