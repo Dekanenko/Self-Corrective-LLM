@@ -54,7 +54,6 @@ def main():
     parser.add_argument("--logging_steps", type=int, default=10)
     parser.add_argument("--eval_steps", type=int, default=50)
     parser.add_argument("--save_steps", type=int, default=50)
-    parser.add_argument("--max_sequence_length", type=int, default=800, help="Maximum sequence length for padding and truncation.")
 
     # Exposing LoRA Config
     parser.add_argument("--lora_r", type=int, default=8)
@@ -167,7 +166,7 @@ def main():
         label_names=["labels", "hallucination_labels"],
     )
 
-    data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer, max_sequence_length=args.max_sequence_length)
+    data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer)
 
     trainer = SelfCorrectionTrainer(
         model=peft_model,
