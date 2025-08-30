@@ -81,6 +81,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
 
         # 5. Modify the token logits conditionally.
         deletion_logits = all_hallucination_logits[..., 1:] # skip the first token (no hallucination)
+        deletion_tokens_boost = F.softplus(deletion_logits)
 
         # Conditionally add the deletion logits.
         if hallucination_labels is not None and labels is not None:
@@ -97,13 +98,13 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             combined_mask = (mask_no_hallucination | mask_is_deletion_token).unsqueeze(-1)
             to_add = torch.where(
                 combined_mask,
-                deletion_logits,
-                torch.zeros_like(deletion_logits)
+                deletion_tokens_boost,
+                torch.zeros_like(deletion_tokens_boost)
             )
             logits[:, :, -self.num_new_tokens:].add_(to_add)
         else:
             # Inference case: always add the deletion logits to the token logits
-            logits[:, :, -self.num_new_tokens:].add_(deletion_logits)
+            logits[:, :, -self.num_new_tokens:].add_(deletion_tokens_boost)
 
         # 6. Return the custom output object
         return SelfCorrectiveLlamaOutput(

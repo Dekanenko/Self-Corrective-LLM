@@ -225,119 +225,120 @@ def process_data(
     hallucination_labels = [-100] * prompt_token_len + [0] * completion_token_len
     prompt_char_len = len(prompt)
 
-    # --- Pass 1: Labeling with Validated Substring Matching ---
-    for text_to_find in item.get("hallucinated_text", []):
-        if not text_to_find:
-            continue
-        
-        try:
-            cleaned_text = codecs.decode(text_to_find, 'unicode_escape')
-        except UnicodeDecodeError as e:
-            # This error occurs with a trailing backslash (common in LaTeX).
-            # Fall back to using the text as-is.
-            cleaned_text = text_to_find
-        
-        # Escape the cleaned text to safely use it in a regex pattern
-        pattern = re.escape(cleaned_text)
-        
-        # pattern = re.escape(text_to_find)
-        for match in re.finditer(pattern, full_text[prompt_char_len:]):
-            start_index = match.start() + prompt_char_len
-            end_index = match.end() + prompt_char_len
-
-            # A match is valid UNLESS it's "glued" to alphanumeric characters on both sides.
-            # Check char before the match
-            start_char_is_alnum = start_index > 0 and full_text[start_index - 1].isalnum()
+    if item["hallucinated_text"]:
+        # --- Pass 1: Labeling with Validated Substring Matching ---
+        for text_to_find in item.get("hallucinated_text", []):
+            if not text_to_find:
+                continue
             
-            # Check first char of the match itself
-            text_starts_with_alnum = text_to_find[0].isalnum()
-
-            # Check char after the match
-            end_char_is_alnum = end_index < len(full_text) and full_text[end_index].isalnum()
+            try:
+                cleaned_text = codecs.decode(text_to_find, 'unicode_escape')
+            except UnicodeDecodeError as e:
+                # This error occurs with a trailing backslash (common in LaTeX).
+                # Fall back to using the text as-is.
+                cleaned_text = text_to_find
             
-            # Check last char of the match itself
-            text_ends_with_alnum = text_to_find[-1].isalnum()
-
-            # The match is invalid ONLY if it forms a longer word/number with its surroundings.
-            # E.g., `pre[MATCH]post` where all are alphanumeric.
-            if start_char_is_alnum and text_starts_with_alnum:
-                continue # Invalid match, e.g. finding 'port' in 'airport'
-            if end_char_is_alnum and text_ends_with_alnum:
-                continue # Invalid match, e.g. finding 'cat' in 'catch'
+            # Escape the cleaned text to safely use it in a regex pattern
+            pattern = re.escape(cleaned_text)
             
-            # If we pass the checks, it's a valid match
-            for i, (token_start, token_end) in enumerate(offset_mapping):
-                if max(token_start, start_index) < min(token_end, end_index):
-                    if i >= prompt_token_len:
-                        hallucination_labels[i] = 1
-            # Since we found the valid match, we can break from the finditer loop
-            break
+            # pattern = re.escape(text_to_find)
+            for match in re.finditer(pattern, full_text[prompt_char_len:]):
+                start_index = match.start() + prompt_char_len
+                end_index = match.end() + prompt_char_len
 
-    # --- Pass 2: Special handling for deletion tokens ---
-    for i in range(prompt_token_len, len(input_ids)):
-        token_id = input_ids[i]
-
-        if token_id == del_w_token_id:
-            # Label the <DEL_W> token itself.
-            hallucination_labels[i] = 1
-            
-            # Ensure there is a token before it to delete.
-            if i > prompt_token_len:
+                # A match is valid UNLESS it's "glued" to alphanumeric characters on both sides.
+                # Check char before the match
+                start_char_is_alnum = start_index > 0 and full_text[start_index - 1].isalnum()
                 
-                # Start backtracking from the token immediately before <DEL_W>.
+                # Check first char of the match itself
+                text_starts_with_alnum = text_to_find[0].isalnum()
+
+                # Check char after the match
+                end_char_is_alnum = end_index < len(full_text) and full_text[end_index].isalnum()
+                
+                # Check last char of the match itself
+                text_ends_with_alnum = text_to_find[-1].isalnum()
+
+                # The match is invalid ONLY if it forms a longer word/number with its surroundings.
+                # E.g., `pre[MATCH]post` where all are alphanumeric.
+                if start_char_is_alnum and text_starts_with_alnum:
+                    continue # Invalid match, e.g. finding 'port' in 'airport'
+                if end_char_is_alnum and text_ends_with_alnum:
+                    continue # Invalid match, e.g. finding 'cat' in 'catch'
+                
+                # If we pass the checks, it's a valid match
+                for i, (token_start, token_end) in enumerate(offset_mapping):
+                    if max(token_start, start_index) < min(token_end, end_index):
+                        if i >= prompt_token_len:
+                            hallucination_labels[i] = 1
+                # Since we found the valid match, we can break from the finditer loop
+                break
+
+        # --- Pass 2: Special handling for deletion tokens ---
+        for i in range(prompt_token_len, len(input_ids)):
+            token_id = input_ids[i]
+
+            if token_id == del_w_token_id:
+                # Label the <DEL_W> token itself.
+                hallucination_labels[i] = 1
+                
+                # Ensure there is a token before it to delete.
+                if i > prompt_token_len:
+                    
+                    # Start backtracking from the token immediately before <DEL_W>.
+                    for j in range(i - 1, prompt_token_len - 1, -1):
+                        # Label the current token as part of the deleted word.
+                        hallucination_labels[j] = 1
+                        
+                        # Get the actual text of the token using its offset.
+                        tok_start_char, tok_end_char = offset_mapping[j]
+                        token_text = full_text[tok_start_char:tok_end_char]
+                        
+                        # If the token starts with a space or is a single punctuation mark
+                        # that acts as a boundary, we've found the start of the word.
+                        if token_text.startswith((' ', '\n', '\t')):
+                            break
+                    
+            elif token_id == del_s_token_id or token_id == del_a_token_id:
+                # Label other deletion tokens (<DEL_S>, <DEL_A>) as 1.
+                hallucination_labels[i] = 1
+            
+        # --- Pass 3: Heuristic correction for missed <DEL_S> and <DEL_A> spans ---
+        sentence_boundary_chars = {'.', '!', '?', '\n'}
+        # Iterate backwards through the completion tokens
+        for i in range(len(input_ids) - 1, prompt_token_len, -1):
+            token_id = input_ids[i]
+            is_del_s_or_a = token_id == del_s_token_id or token_id == del_a_token_id
+            
+            # Trigger condition: A <DEL_S/A> token is labeled, but the token before it is not.
+            if is_del_s_or_a and hallucination_labels[i] == 1 and hallucination_labels[i - 1] == 0:
+                
+                span_start_idx = prompt_token_len
+                found_other_hallucination = False
+                capture_whole_sentence = False
+                
+                # Scan backwards from the token before the deletion token.
                 for j in range(i - 1, prompt_token_len - 1, -1):
-                    # Label the current token as part of the deleted word.
-                    hallucination_labels[j] = 1
-                    
-                    # Get the actual text of the token using its offset.
-                    tok_start_char, tok_end_char = offset_mapping[j]
-                    token_text = full_text[tok_start_char:tok_end_char]
-                    
-                    # If the token starts with a space or is a single punctuation mark
-                    # that acts as a boundary, we've found the start of the word.
-                    if token_text.startswith((' ', '\n', '\t')):
-                        break
+                    if not capture_whole_sentence and token_id == del_s_token_id and input_ids[j] == del_w_token_id:
+                        capture_whole_sentence = True
                 
-        elif token_id == del_s_token_id or token_id == del_a_token_id:
-            # Label other deletion tokens (<DEL_S>, <DEL_A>) as 1.
-            hallucination_labels[i] = 1
-        
-    # --- Pass 3: Heuristic correction for missed <DEL_S> and <DEL_A> spans ---
-    sentence_boundary_chars = {'.', '!', '?', '\n'}
-    # Iterate backwards through the completion tokens
-    for i in range(len(input_ids) - 1, prompt_token_len, -1):
-        token_id = input_ids[i]
-        is_del_s_or_a = token_id == del_s_token_id or token_id == del_a_token_id
-        
-        # Trigger condition: A <DEL_S/A> token is labeled, but the token before it is not.
-        if is_del_s_or_a and hallucination_labels[i] == 1 and hallucination_labels[i - 1] == 0:
-            
-            span_start_idx = prompt_token_len
-            found_other_hallucination = False
-            capture_whole_sentence = False
-            
-            # Scan backwards from the token before the deletion token.
-            for j in range(i - 1, prompt_token_len - 1, -1):
-                if not capture_whole_sentence and token_id == del_s_token_id and input_ids[j] == del_w_token_id:
-                    capture_whole_sentence = True
-            
-                if not capture_whole_sentence and hallucination_labels[j] == 1:
-                    found_other_hallucination = True
-                    break
-                
-                # For <DEL_S>, stop if we find a sentence boundary.
-                if capture_whole_sentence or (token_id == del_s_token_id and j < i - 1):
-                    tok_start, tok_end = offset_mapping[j]
-                    tok_text = full_text[tok_start:tok_end]
-                    if any(char in sentence_boundary_chars for char in tok_text):
-                        span_start_idx = j + 1
+                    if not capture_whole_sentence and hallucination_labels[j] == 1:
+                        found_other_hallucination = True
                         break
-            
-            # If we scanned the whole span without finding existing labels...
-            if not found_other_hallucination:
-                # ...then apply the correction.
-                for k in range(span_start_idx, i):
-                    hallucination_labels[k] = 1
+                    
+                    # For <DEL_S>, stop if we find a sentence boundary.
+                    if capture_whole_sentence or (token_id == del_s_token_id and j < i - 1):
+                        tok_start, tok_end = offset_mapping[j]
+                        tok_text = full_text[tok_start:tok_end]
+                        if any(char in sentence_boundary_chars for char in tok_text):
+                            span_start_idx = j + 1
+                            break
+                
+                # If we scanned the whole span without finding existing labels...
+                if not found_other_hallucination:
+                    # ...then apply the correction.
+                    for k in range(span_start_idx, i):
+                        hallucination_labels[k] = 1
 
     model_inputs["hallucination_labels"] = hallucination_labels
     del model_inputs["offset_mapping"]

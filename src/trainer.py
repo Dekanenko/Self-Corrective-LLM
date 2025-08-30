@@ -13,23 +13,11 @@ class SelfCorrectionDataCollator:
     and pads `labels` and our custom `hallucination_labels` with -100.
     """
     tokenizer: PreTrainedTokenizerBase
-    max_sequence_length: Optional[int] = None
     label_pad_token_id: int = -100
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         labels = [feature.pop("labels") for feature in features]
         hallucination_labels = [feature.pop("hallucination_labels") for feature in features]
-
-        # Manually truncate if a max length is provided.
-        if self.max_sequence_length is not None:
-            for i in range(len(features)):
-                # Truncate the features that are lists
-                for key in features[i]:
-                    if isinstance(features[i][key], list):
-                        features[i][key] = features[i][key][:self.max_sequence_length]
-                # Truncate the labels we popped earlier
-                labels[i] = labels[i][:self.max_sequence_length]
-                hallucination_labels[i] = hallucination_labels[i][:self.max_sequence_length]
 
         batch = self.tokenizer.pad(
             features,
