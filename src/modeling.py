@@ -101,10 +101,22 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
                 deletion_tokens_boost,
                 torch.zeros_like(deletion_tokens_boost)
             )
-            logits[:, :, -self.num_new_tokens:].add_(to_add)
         else:
-            # Inference case: always add the deletion logits to the token logits
-            logits[:, :, -self.num_new_tokens:].add_(deletion_tokens_boost)
+            # Inference case: The hallucination detector's decision becomes a hard gate.
+            hallucination_decision = torch.argmax(all_hallucination_logits, dim=-1)
+
+            # Create a mask that is True only when a hallucination is detected (decision != 0)
+            hallucination_present_mask = (hallucination_decision != 0).unsqueeze(-1)
+
+            # Where the mask is True, use the softplus boost.
+            # Where the mask is False, use a large negative value to suppress deletion.
+            to_add = torch.where(
+                hallucination_present_mask,
+                deletion_tokens_boost,
+                torch.full_like(deletion_tokens_boost, torch.finfo(deletion_tokens_boost.dtype).min) # Suppress if no hallucination
+            )
+        
+        logits[:, :, -self.num_new_tokens:].add_(to_add)
 
         # 6. Return the custom output object
         return SelfCorrectiveLlamaOutput(

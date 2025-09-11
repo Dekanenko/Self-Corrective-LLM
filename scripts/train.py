@@ -60,6 +60,7 @@ def main():
     parser.add_argument("--lora_alpha", type=int, default=32)
     parser.add_argument("--lora_dropout", type=float, default=0.05)
     parser.add_argument("--warmup_ratio", type=float, default=0.03, help="Linear warmup over warmup_ratio fraction of total steps.")
+    parser.add_argument("--max_grad_norm", type=float, default=40.0, help="The maximum gradient norm for clipping.")
 
     args, _ = parser.parse_known_args()
 
@@ -164,6 +165,7 @@ def main():
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         label_names=["labels", "hallucination_labels"],
+        max_grad_norm=args.max_grad_norm,
     )
 
     data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer)
