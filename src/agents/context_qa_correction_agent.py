@@ -12,7 +12,7 @@ from src.prompts.gemini_agent_prompts import (
     ContextQAErrorCorrectionPrompt, 
     ContextQAResponseVerificationPrompt
 )
-from src.utils.formatting import ensure_space_after_del_tokens
+from src.utils.formatting import ensure_space_after_del_tokens, apply_del_tokens
 
 class ContextQACorrectionAgent:
     def __init__(
@@ -22,11 +22,13 @@ class ContextQACorrectionAgent:
             error_check_temperature: float = 0.2, 
             correction_temperature: float = 0.3, 
             error_detection_only: bool = False,
+            apply_deletion_tags: bool = False,
             max_responses_to_correct: int = 3,
     ):
         self.error_check_llm = ChatGoogleGenerativeAI(model=error_check_model_name, temperature=error_check_temperature)
         self.correction_llm = ChatGoogleGenerativeAI(model=correction_model_name, temperature=correction_temperature)
         self.error_detection_only = error_detection_only
+        self.apply_deletion_tags = apply_deletion_tags
         self.max_responses_to_correct = max_responses_to_correct
 
         self.model = self._build_graph().compile()
@@ -96,6 +98,11 @@ class ContextQACorrectionAgent:
             "question", "context", "answer", 
             "response", "format_instructions",
         ])
+
+        if self.apply_deletion_tags:
+            print("Before applying deletion tags:", "\n---\n".join(response_batch))
+            response_batch = [apply_del_tokens(res) for res in response_batch]
+            print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
 
         # batch inputs
         prompts = [

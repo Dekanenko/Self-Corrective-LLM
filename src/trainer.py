@@ -46,7 +46,7 @@ class SelfCorrectionTrainer(Trainer):
             alpha (float): The weight for the token prediction loss. 
                            The hallucination loss will be weighted by (1 - alpha).
             correction_weights (List[float]): A list of weights for the 4 correction classes 
-                                            (0: no-op, 1: del-w, 2: del-s, 3: del-a).
+                                            (0: no-op, 1: del-s, 2: del-a).
         """
         super().__init__(*args, **kwargs)
         self.alpha = alpha

@@ -90,6 +90,41 @@ def apply_del_tokens(text: str) -> str:
     return final_text.replace(' \n ', '\n')
 
 
+def apply_del_w_tokens(text: str) -> str:
+    text = ensure_space_after_del_tokens(text)
+    text = text.replace('\n\n', ' [double_newline] ').replace('\n', ' \n ')
+    words = text.split(' ')
+
+    i = 0
+    while i < len(words):
+        if "<DEL_W>" in words[i]:
+            # Simple case: DEL_W is attached to the word to be replaced
+            if "<DEL_W>" in words[i] and words[i] != "<DEL_W>":
+                del words[i]
+                i -= 1
+            elif i > 0 and words[i] == "<DEL_W>":
+                del words[i-1:i+1] # delete the word before and the token
+                i -=1 # adjust index
+                continue
+
+        i += 1
+    
+    if not words:
+        return ""
+
+    # Post-processing step to remove adjacent duplicate words (case-insensitive)
+    cleaned_words = [words[0]]
+    for i in range(1, len(words)):
+        # Compare current word with the last added word, case-insensitively
+        if words[i].lower() != cleaned_words[-1].lower():
+            cleaned_words.append(words[i])
+
+    # Re-join the words, converting newline tokens back to actual newlines.
+    final_text = ' '.join(cleaned_words)
+    return final_text.replace(' \n ', '\n').replace(' [double_newline] ', '\n\n')
+
+
+
 def format_errors(errors: list[dict]) -> str:
     errors_str = ""
     for i, error in enumerate(errors):
