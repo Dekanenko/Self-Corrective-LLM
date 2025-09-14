@@ -13,7 +13,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
     def __init__(self, config):
         super().__init__(config)
         
-        self.num_new_tokens = 3
+        self.num_new_tokens = 2
         self.original_vocab_size = config.vocab_size
 
         # Create a new, small embedding layer for only the special tokens
@@ -45,7 +45,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         clamped_input_ids = torch.clamp(input_ids, max=self.original_vocab_size - 1)
         inputs_embeds = self.model.embed_tokens(clamped_input_ids)
 
-        # Overwrite the embeddings for our new special tokens
+        # Overwrite the embeddings for new special tokens
         special_token_mask = input_ids >= self.original_vocab_size
         if special_token_mask.any():
             special_ids = input_ids[special_token_mask] - self.original_vocab_size
@@ -101,22 +101,10 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
                 deletion_tokens_boost,
                 torch.zeros_like(deletion_tokens_boost)
             )
+            logits[:, :, -self.num_new_tokens:].add_(to_add)
         else:
-            # Inference case: The hallucination detector's decision becomes a hard gate.
-            hallucination_decision = torch.argmax(all_hallucination_logits, dim=-1)
-
-            # Create a mask that is True only when a hallucination is detected (decision != 0)
-            hallucination_present_mask = (hallucination_decision != 0).unsqueeze(-1)
-
-            # Where the mask is True, use the softplus boost.
-            # Where the mask is False, use a large negative value to suppress deletion.
-            to_add = torch.where(
-                hallucination_present_mask,
-                deletion_tokens_boost,
-                torch.full_like(deletion_tokens_boost, torch.finfo(deletion_tokens_boost.dtype).min) # Suppress if no hallucination
-            )
-        
-        logits[:, :, -self.num_new_tokens:].add_(to_add)
+            # Inference case: always add the deletion logits to the token logits
+            logits[:, :, -self.num_new_tokens:].add_(deletion_tokens_boost)
 
         # 6. Return the custom output object
         return SelfCorrectiveLlamaOutput(
