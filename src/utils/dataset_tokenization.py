@@ -227,6 +227,7 @@ def process_data(
     prompt = add_deletion_instruction(item["input"], special_instruction, insertion_marker)
     completion = f'{item["correct_response"]}<|eot_id|>'
     full_text = prompt + completion
+    full_text = full_text.replace("\\n", "\n")
     
     # 2. Tokenize the full text with offset mappings
     model_inputs = tokenizer(
@@ -253,7 +254,8 @@ def process_data(
         for text_to_find in item.get("hallucinated_text", []):
             if not text_to_find:
                 continue
-            
+
+            text_to_find = text_to_find.replace("\\n", "\n")
             # Escape the text_to_find to safely use it in a regex pattern
             pattern = re.escape(text_to_find)
 
