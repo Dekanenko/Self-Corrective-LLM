@@ -41,16 +41,36 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         hallucination_labels=None, 
         **kwargs
     ):
-        # 1. Manually construct the input embeddings
-        clamped_input_ids = torch.clamp(input_ids, max=self.original_vocab_size - 1)
-        inputs_embeds = self.model.embed_tokens(clamped_input_ids)
+        # 1. Manually construct the input embeddings by combining the original and new token embeddings
+        
+        # Create masks for original and new tokens
+        original_token_mask = input_ids < self.original_vocab_size
+        special_token_mask = ~original_token_mask
 
-        # Overwrite the embeddings for new special tokens
-        special_token_mask = input_ids >= self.original_vocab_size
+        # Get embeddings from the original, frozen embedding layer
+        # We use a clamped version of input_ids to avoid out-of-bounds errors.
+        # The values for special tokens will be ignored anyway by the masking.
+        clamped_input_ids = torch.clamp(input_ids, max=self.original_vocab_size - 1)
+        original_embeds = self.model.embed_tokens(clamped_input_ids)
+        
+        # Zero out the embeddings where special tokens are supposed to be.
+        original_embeds = original_embeds * original_token_mask.unsqueeze(-1).to(original_embeds.dtype)
+
+        # Get embeddings from the new, trainable embedding layer
         if special_token_mask.any():
+            # Adjust IDs to be valid indices for the new embedding layer
             special_ids = input_ids[special_token_mask] - self.original_vocab_size
-            special_embeds = self.new_token_embeddings(special_ids)
-            inputs_embeds[special_token_mask] = special_embeds
+            new_embeds = self.new_token_embeddings(special_ids)
+            
+            # Create a full-size tensor for the new embeddings to allow for addition
+            full_new_embeds = torch.zeros_like(original_embeds)
+            full_new_embeds[special_token_mask] = new_embeds
+            
+            # Combine the embeddings by adding them. Since one is zero where the other has values,
+            # this works as a clean, non-in-place merge.
+            inputs_embeds = original_embeds + full_new_embeds
+        else:
+            inputs_embeds = original_embeds
 
         # 2. Pass the constructed embeddings through the base transformer model
         kwargs["inputs_embeds"] = inputs_embeds
