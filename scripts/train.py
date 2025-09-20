@@ -66,6 +66,8 @@ def main():
 
     # Parse the correction_weights from a JSON string
     correction_weights = json.loads(args.correction_weights)
+    # check if the correction weights are a list of floats
+    print(f"--- Correction weights type: {correction_weights[0].__class__} ---")
 
     # 2. Load Tokenizer and Model
     print("--- Loading tokenizer ---")
@@ -112,7 +114,9 @@ def main():
             "q_proj", 
             "k_proj", 
             "v_proj", 
-            "o_proj", 
+            "o_proj",
+            "embed_tokens",
+            "lm_head",
         ],
         # Fully fine-tune the custom detector.
         modules_to_save=[
