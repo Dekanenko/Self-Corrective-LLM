@@ -42,7 +42,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         hallucination_labels=None, 
         **kwargs
     ):
-        # 1. Manually construct input embeddings
+        # 1. Manually construct the input embeddings
         clamped_input_ids = torch.clamp(input_ids, max=self.original_vocab_size - 1)
         inputs_embeds = self.model.embed_tokens(clamped_input_ids)
 
@@ -84,7 +84,8 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         all_hallucination_logits = self.hallucination_detector(normalized_hidden)
 
         # 5. Modify the token logits conditionally.
-        deletion_tokens_boost = all_hallucination_logits[..., 1:] # skip the first token (no hallucination)
+        deletion_logits = all_hallucination_logits[..., 1:] # skip the first token (no hallucination)
+        deletion_tokens_boost = F.softplus(deletion_logits)
 
         # Conditionally add the deletion logits.
         if hallucination_labels is not None and labels is not None:
@@ -111,7 +112,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             # Create a mask that is True only when a hallucination is detected (decision != 0)
             hallucination_present_mask = (hallucination_decision != 0).unsqueeze(-1)
 
-            # Where the mask is True, use the deletion tokens boost.
+            # Where the mask is True, use the softplus boost.
             # Where the mask is False, use a large negative value to suppress deletion.
             to_add = torch.where(
                 hallucination_present_mask,
