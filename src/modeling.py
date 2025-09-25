@@ -15,6 +15,9 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         
         self.num_new_tokens = 2
         self.original_vocab_size = config.vocab_size
+        self.alpha_boost = config.alpha_boost if "alpha_boost" in config else 5.0
+        self.tau = config.tau if "tau" in config else 0.7
+        self.max_boost = config.max_boost if "max_boost" in config else 8.0
 
         # Create a new, small embedding layer for only the special tokens
         self.new_token_embeddings = nn.Embedding(self.num_new_tokens, config.hidden_size)
@@ -84,41 +87,41 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         all_hallucination_logits = self.hallucination_detector(normalized_hidden)
 
         # 5. Modify the token logits conditionally.
-        deletion_logits = all_hallucination_logits[..., 1:] # skip the first token (no hallucination)
-        deletion_tokens_boost = F.softplus(deletion_logits)
+        no_hall, del_s, del_a = all_hallucination_logits.split(1, dim=-1)
+        margin_s, margin_a = del_s - no_hall, del_a - no_hall
+    
+        boost_del_s = (self.alpha_boost * F.softplus(margin_s - self.tau)).clamp(max=self.max_boost)
+        boost_del_a = (self.alpha_boost * F.softplus(margin_a - self.tau)).clamp(max=self.max_boost)
 
         # Conditionally add the deletion logits.
-        if hallucination_labels is not None and labels is not None:
-            # Training case:
-            # Condition 1: The hallucination label is 0 (no hallucination)
-            mask_no_hallucination = (hallucination_labels == 0)
-
-            # Condition 2: The next token is one of the deletion tokens.
-            # Check if the token ID is within the range of the last `num_new_tokens` in the vocab
-            vocab_size = logits.shape[-1]
-            mask_is_deletion_token = (labels >= (vocab_size - self.num_new_tokens)) & (labels < vocab_size)
+        if labels is not None:
+            # Training case: Apply boosts precisely based on the ground truth label.
+            # This prevents signal conflict by ensuring we only boost the correct token.
             
-            # Combine masks and create the tensor to add.
-            combined_mask = (mask_no_hallucination | mask_is_deletion_token).unsqueeze(-1)
-            to_add = torch.where(
-                combined_mask,
-                deletion_tokens_boost,
-                torch.zeros_like(deletion_tokens_boost)
-            )
+            # Create separate masks for each deletion token.
+            mask_s = (labels == self.original_vocab_size).unsqueeze(-1)
+            mask_a = (labels == self.original_vocab_size + 1).unsqueeze(-1)
+            
+            # Apply boosts only where the label matches the specific token.
+            to_add_s = torch.where(mask_s, boost_del_s, torch.zeros_like(boost_del_s))
+            to_add_a = torch.where(mask_a, boost_del_a, torch.zeros_like(boost_del_a))
+            
+            # Combine into the final tensor to add.
+            to_add = torch.cat([to_add_s, to_add_a], dim=-1)
         else:
-            # Inference case: The hallucination detector's decision becomes a hard gate.
-            hallucination_decision = torch.argmax(all_hallucination_logits, dim=-1)
+            # Inference case: Apply boosts precisely based on the margin threshold.
+            # This prevents "logit bleed" by only boosting the token that meets the criterion.
+            
+            # Create separate masks for each token's margin.
+            mask_s_active = margin_s > self.tau
+            mask_a_active = margin_a > self.tau
+            
+            # Calculate the boost for each token individually.
+            to_add_s = torch.where(mask_s_active, boost_del_s, torch.zeros_like(boost_del_s))
+            to_add_a = torch.where(mask_a_active, boost_del_a, torch.zeros_like(boost_del_a))
 
-            # Create a mask that is True only when a hallucination is detected (decision != 0)
-            hallucination_present_mask = (hallucination_decision != 0).unsqueeze(-1)
-
-            # Where the mask is True, use the softplus boost.
-            # Where the mask is False, use a large negative value to suppress deletion.
-            to_add = torch.where(
-                hallucination_present_mask,
-                deletion_tokens_boost,
-                torch.full_like(deletion_tokens_boost, torch.finfo(deletion_tokens_boost.dtype).min) # Suppress if no hallucination
-            )
+            # Combine into the final tensor to add.
+            to_add = torch.cat([to_add_s, to_add_a], dim=-1)
         
         logits[:, :, -self.num_new_tokens:].add_(to_add)
 

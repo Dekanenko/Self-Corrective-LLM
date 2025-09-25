@@ -1,9 +1,10 @@
-from transformers import Trainer, PreTrainedTokenizerBase
+from transformers import Trainer, PreTrainedTokenizerBase, training_args
 import torch.nn as nn
 import torch
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from sklearn.metrics import f1_score
+from transformers.optimization import AdamW, get_scheduler
 
 @dataclass
 class SelfCorrectionDataCollator:
@@ -56,11 +57,98 @@ class SelfCorrectionTrainer(Trainer):
         else:
             self.correction_weight_tensor = None
             
+        # --- Custom State for Differential LR ---
+        self.custom_head_learning_rate = kwargs.pop("custom_head_learning_rate", None)
+            
         # --- Custom Logging State ---
         self._last_component_losses = {}
         self._eval_accumulator = {
             "token_losses": [], "hallucination_losses": [], "preds": [], "labels": [],
         }
+
+    def create_optimizer(self):
+        """
+        Overrides the default optimizer creation to enable a differential learning rate.
+        """
+        if self.optimizer is None:
+            optimizer_cls = AdamW
+            
+            # --- Separate parameters into two groups ---
+            lora_params = []
+            head_params = []
+            
+            # Define the names of the custom, fully-trained modules
+            head_module_names = [
+                "new_token_embeddings", 
+                "hallucination_gate_proj", 
+                "hallucination_up_proj", 
+                "hallucination_down_proj",
+                "hallucination_norm",
+                "hallucination_detector"
+            ]
+
+            for name, param in self.model.named_parameters():
+                if not param.requires_grad:
+                    continue
+                
+                is_head_param = any(head_name in name for head_name in head_module_names)
+                
+                if is_head_param:
+                    head_params.append(param)
+                else:
+                    lora_params.append(param)
+
+            # --- Create optimizer with parameter groups ---
+            optimizer_grouped_parameters = [
+                {
+                    "params": lora_params,
+                    "lr": self.args.learning_rate,
+                },
+                {
+                    "params": head_params,
+                    "lr": self.custom_head_learning_rate if self.custom_head_learning_rate is not None else self.args.learning_rate,
+                },
+            ]
+
+            optimizer_kwargs = {
+                "betas": (self.args.adam_beta1, self.args.adam_beta2),
+                "eps": self.args.adam_epsilon,
+            }
+            
+            self.optimizer = optimizer_cls(optimizer_grouped_parameters, **optimizer_kwargs)
+            
+        return self.optimizer
+
+    def create_scheduler(self, num_training_steps: int, optimizer: torch.optim.Optimizer = None):
+        """
+        Overrides the default scheduler creation to ensure it works correctly with
+        multi-group optimizer.
+        """
+        if self.lr_scheduler is None:
+            self.lr_scheduler = get_scheduler(
+                self.args.lr_scheduler_type,
+                optimizer=self.optimizer if optimizer is None else optimizer,
+                num_warmup_steps=self.args.get_warmup_steps(num_training_steps),
+                num_training_steps=num_training_steps,
+            )
+        return self.lr_scheduler
+
+    def log(self, logs: Dict[str, float]) -> None:
+        """
+        Overrides the default logging behavior to add both learning rates to the logs.
+        """
+        # Add the learning rates from both parameter groups to the logs
+        if self.state.is_local_process_zero and self.optimizer is not None:
+            if 'learning_rate' in logs:
+                logs['lr_lora'] = self.optimizer.param_groups[0]['lr']
+                logs['lr_head'] = self.optimizer.param_groups[1]['lr']
+                logs.pop('learning_rate') # remove the ambiguous default
+            
+            # Add custom component losses for training steps
+            if 'loss' in logs:
+                logs.update(self._last_component_losses)
+
+        super().log(logs)
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         token_labels = inputs.get("labels")
@@ -116,11 +204,6 @@ class SelfCorrectionTrainer(Trainer):
                 self._eval_accumulator["labels"].extend(active_labels.cpu().numpy())
         
         return (custom_loss, outputs) if return_outputs else custom_loss
-
-    def log(self, logs: Dict[str, float], *args, **kwargs) -> None:
-        if self.state.is_local_process_zero and 'loss' in logs:
-            logs.update(self._last_component_losses)
-        super().log(logs, *args, **kwargs)
 
     def evaluate(self, eval_dataset=None, ignore_keys=None, metric_key_prefix: str = "eval"):
         # The dataloader needs to be created from the dataset.
