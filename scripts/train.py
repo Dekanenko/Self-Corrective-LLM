@@ -9,6 +9,7 @@ from transformers import (
     AutoModelForCausalLM,
     TrainingArguments,
     BitsAndBytesConfig,
+    AutoConfig,
 )
 from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
 import datasets
@@ -45,6 +46,7 @@ def main():
     parser.add_argument("--train_batch_size", type=int, default=2)
     parser.add_argument("--eval_batch_size", type=int, default=2)
     parser.add_argument("--learning_rate", type=float, default=2e-5)
+    parser.add_argument("--custom_head_learning_rate", type=float, default=2e-4)
     parser.add_argument("--alpha", type=float, default=0.3)
     parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0, 6.0]')
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
@@ -91,9 +93,16 @@ def main():
         ],
     )
 
+    # Pass custom hyperparameters to the model config
+    model_config = AutoConfig.from_pretrained(args.base_model_path)
+    model_config.alpha_boost = 5.0
+    model_config.tau = 0.7
+    model_config.max_boost = 8.0
+
     print("--- Loading Model with BNB Config ---")
     model = AutoModelForCausalLM.from_pretrained(
         args.base_model_path,
+        config=model_config,
         quantization_config=bnb_config,
         trust_remote_code=True,
     )
@@ -178,6 +187,7 @@ def main():
         data_collator=data_collator,
         alpha=args.alpha,
         correction_weights=correction_weights,
+        custom_head_learning_rate=args.custom_head_learning_rate,
     )
 
     # 6. Start Training
