@@ -125,10 +125,6 @@ class SelfCorrectionTrainer(Trainer):
                 logs['lr_lora'] = self.optimizer.param_groups[0]['lr']
                 logs['lr_head'] = self.optimizer.param_groups[1]['lr']
                 logs.pop('learning_rate') # remove the ambiguous default
-            
-            # Add custom component losses for training steps
-            if 'loss' in logs:
-                logs.update(self._last_component_losses)
 
         super().log(logs, *args, **kwargs)
 
