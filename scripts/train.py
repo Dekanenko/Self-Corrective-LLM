@@ -46,9 +46,10 @@ def main():
     parser.add_argument("--train_batch_size", type=int, default=2)
     parser.add_argument("--eval_batch_size", type=int, default=2)
     parser.add_argument("--learning_rate", type=float, default=2e-5)
+    # The following hyperparameters are no longer used by the simplified model and trainer.
     parser.add_argument("--custom_head_learning_rate", type=float, default=2e-4)
-    parser.add_argument("--alpha", type=float, default=0.3)
-    parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0, 6.0]')
+    # parser.add_argument("--alpha", type=float, default=0.3)
+    # parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0, 6.0]')
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
     parser.add_argument("--optim", type=str, default="paged_adamw_8bit")
     parser.add_argument("--weight_decay", type=float, default=0.01)
@@ -66,10 +67,11 @@ def main():
 
     args, _ = parser.parse_known_args()
 
-    # Parse the correction_weights from a JSON string
-    correction_weights = json.loads(args.correction_weights)
-    # check if the correction weights are a list of floats
-    print(f"--- Correction weights type: {correction_weights[0].__class__} ---")
+    # The following hyperparameters are no longer used by the simplified model and trainer.
+    # # Parse the correction_weights from a JSON string
+    # correction_weights = json.loads(args.correction_weights)
+    # # check if the correction weights are a list of floats
+    # print(f"--- Correction weights type: {correction_weights[0].__class__} ---")
 
     # 2. Load Tokenizer and Model
     print("--- Loading tokenizer ---")
@@ -84,25 +86,27 @@ def main():
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=compute_dtype,
         bnb_4bit_use_double_quant=True,
+        # Only the new embeddings are not quantized.
         llm_int8_skip_modules=[
-            "hallucination_gate_proj",
-            "hallucination_up_proj",
-            "hallucination_down_proj",
-            "hallucination_detector",
+            # "hallucination_gate_proj",
+            # "hallucination_up_proj",
+            # "hallucination_down_proj",
+            # "hallucination_detector",
             "new_token_embeddings",
         ],
     )
 
-    # Pass custom hyperparameters to the model config
-    model_config = AutoConfig.from_pretrained(args.base_model_path)
-    model_config.alpha_boost = 5.0
-    model_config.tau = 0.7
-    model_config.max_boost = 8.0
+    # The following hyperparameters are no longer used by the simplified model and trainer.
+    # # Pass custom hyperparameters to the model config
+    # model_config = AutoConfig.from_pretrained(args.base_model_path)
+    # model_config.alpha_boost = 5.0
+    # model_config.tau = 0.7
+    # model_config.max_boost = 8.0
 
     print("--- Loading Model with BNB Config ---")
     model = AutoModelForCausalLM.from_pretrained(
         args.base_model_path,
-        config=model_config,
+        # config=model_config,
         quantization_config=bnb_config,
         trust_remote_code=True,
     )
@@ -127,12 +131,12 @@ def main():
             "embed_tokens",
             "lm_head",
         ],
-        # Fully fine-tune the custom detector.
+        # Only the new embeddings are fully fine-tuned.
         modules_to_save=[
-            "hallucination_gate_proj",
-            "hallucination_up_proj",
-            "hallucination_down_proj",
-            "hallucination_detector",
+            # "hallucination_gate_proj",
+            # "hallucination_up_proj",
+            # "hallucination_down_proj",
+            # "hallucination_detector",
             "new_token_embeddings"
         ],
     )
@@ -185,8 +189,8 @@ def main():
         eval_dataset=eval_dataset,
         tokenizer=tokenizer,
         data_collator=data_collator,
-        alpha=args.alpha,
-        correction_weights=correction_weights,
+        # alpha=args.alpha,
+        # correction_weights=correction_weights,
         custom_head_learning_rate=args.custom_head_learning_rate,
     )
 
