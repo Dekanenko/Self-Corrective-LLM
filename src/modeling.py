@@ -15,9 +15,6 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         
         self.num_new_tokens = 2
         self.original_vocab_size = config.vocab_size
-        self.alpha_boost = config.alpha_boost if "alpha_boost" in config else 5.0
-        self.tau = config.tau if "tau" in config else 0.7
-        self.max_boost = config.max_boost if "max_boost" in config else 8.0
 
         # Create a new, small embedding layer for only the special tokens
         self.new_token_embeddings = nn.Embedding(self.num_new_tokens, config.hidden_size)
@@ -29,13 +26,6 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             self.new_token_embeddings.weight.data.copy_(
                 mean_embeddings.unsqueeze(0).expand(self.num_new_tokens, -1)
             )
-
-        intermediate_size = config.intermediate_size
-        self.hallucination_gate_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
-        self.hallucination_up_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
-        self.hallucination_down_proj = nn.Linear(intermediate_size, config.hidden_size, bias=False)
-        self.hallucination_norm = nn.LayerNorm(config.hidden_size)
-        self.hallucination_detector = nn.Linear(config.hidden_size, self.num_new_tokens + 1)
     
     def forward(
         self, 
@@ -74,62 +64,10 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # Concatenate to get logits over the full, expanded vocabulary
         logits = torch.cat([main_logits, new_logits], dim=-1)
 
-        # 4. SwiGLU-based hallucination detector
-        gate_output = self.hallucination_gate_proj(last_hidden)
-        up_output = self.hallucination_up_proj(last_hidden)
-        gated_hidden = F.silu(gate_output) * up_output
-        detector_hidden = self.hallucination_down_proj(gated_hidden)
-
-        # Add a residual connection and a LayerNorm to stabilize the detector head.
-        normalized_hidden = self.hallucination_norm(detector_hidden + last_hidden)
-
-        # Hallucination logits
-        all_hallucination_logits = self.hallucination_detector(normalized_hidden)
-
-        # 5. Modify the token logits conditionally.
-        no_hall, del_s, del_a = all_hallucination_logits.split(1, dim=-1)
-        margin_s, margin_a = del_s - no_hall, del_a - no_hall
-    
-        boost_del_s = (self.alpha_boost * F.softplus(margin_s - self.tau)).clamp(max=self.max_boost)
-        boost_del_a = (self.alpha_boost * F.softplus(margin_a - self.tau)).clamp(max=self.max_boost)
-
-        # Conditionally add the deletion logits.
-        if labels is not None:
-            # Training case: Apply boosts precisely based on the ground truth label.
-            # This prevents signal conflict by ensuring we only boost the correct token.
-            
-            # Create separate masks for each deletion token.
-            mask_s = (labels == self.original_vocab_size).unsqueeze(-1)
-            mask_a = (labels == self.original_vocab_size + 1).unsqueeze(-1)
-            
-            # Apply boosts only where the label matches the specific token.
-            to_add_s = torch.where(mask_s, boost_del_s, torch.zeros_like(boost_del_s))
-            to_add_a = torch.where(mask_a, boost_del_a, torch.zeros_like(boost_del_a))
-            
-            # Combine into the final tensor to add.
-            to_add = torch.cat([to_add_s, to_add_a], dim=-1)
-        else:
-            # Inference case: Apply boosts precisely based on the margin threshold.
-            # This prevents "logit bleed" by only boosting the token that meets the criterion.
-            
-            # Create separate masks for each token's margin.
-            mask_s_active = margin_s > self.tau
-            mask_a_active = margin_a > self.tau
-            
-            # Calculate the boost for each token individually.
-            to_add_s = torch.where(mask_s_active, boost_del_s, torch.zeros_like(boost_del_s))
-            to_add_a = torch.where(mask_a_active, boost_del_a, torch.zeros_like(boost_del_a))
-
-            # Combine into the final tensor to add.
-            to_add = torch.cat([to_add_s, to_add_a], dim=-1)
-        
-        logits[:, :, -self.num_new_tokens:].add_(to_add)
-
-        # 6. Return the custom output object
+        # 4. Return the custom output object
         return SelfCorrectiveLlamaOutput(
             loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
-            hallucination_logits=all_hallucination_logits,
             past_key_values=transformer_outputs.past_key_values,
             hidden_states=None,
             attentions=transformer_outputs.attentions
