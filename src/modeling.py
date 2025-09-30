@@ -64,7 +64,25 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # Concatenate to get logits over the full, expanded vocabulary
         logits = torch.cat([main_logits, new_logits], dim=-1)
 
-        # 4. Return the custom output object
+        # # 4. During inference, prevent consecutive deletion tokens.
+        # if not self.training:
+        #     # Get the last token for each sequence in the batch.
+        #     prev_token = input_ids[:, -1]
+            
+        #     # Create a boolean mask for sequences where the last token was a deletion token.
+        #     prev_was_del_s = (prev_token == self.original_vocab_size)
+        #     prev_was_del_a = (prev_token == self.original_vocab_size + 1)
+        #     mask = prev_was_del_s | prev_was_del_a
+
+        #     # If any sequence in the batch ended with a deletion token...
+        #     if mask.any():
+        #         # ...suppress the deletion token logits for the current step in those sequences.
+        #         # We only modify the last token in the sequence, which is the current prediction.
+        #         suppress_value = torch.finfo(logits.dtype).min
+        #         logits[mask, -1, self.original_vocab_size] = suppress_value
+        #         logits[mask, -1, self.original_vocab_size + 1] = suppress_value
+
+        # 5. Return the custom output object
         return SelfCorrectiveLlamaOutput(
             loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
