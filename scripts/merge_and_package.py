@@ -175,10 +175,11 @@ def merge_and_package(config_path: str):
             bnb_4bit_use_double_quant=True,
             # This is crucial: we must not quantize the modules that were fully fine-tuned.
             llm_int8_skip_modules=[
-                "hallucination_gate_proj",
-                "hallucination_up_proj",
-                "hallucination_down_proj",
-                "hallucination_detector"
+                # "hallucination_gate_proj",
+                # "hallucination_up_proj",
+                # "hallucination_down_proj",
+                # "hallucination_detector",
+                "new_token_embeddings",
             ],
         )
 
