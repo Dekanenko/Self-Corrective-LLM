@@ -132,6 +132,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         return SelfCorrectiveLlamaOutput(
             loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
+            hallucination_logits=all_hallucination_logits,
             past_key_values=transformer_outputs.past_key_values,
             hidden_states=None,
             attentions=transformer_outputs.attentions
