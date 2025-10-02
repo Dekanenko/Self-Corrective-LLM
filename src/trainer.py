@@ -133,7 +133,7 @@ class SelfCorrectionTrainer(Trainer):
             )
         return self.lr_scheduler
 
-    def log(self, logs: Dict[str, float], *args, **kwargs)
+    def log(self, logs: Dict[str, float], *args, **kwargs) -> None:
         """
         Overrides the default logging behavior to add both learning rates to the logs.
         """
