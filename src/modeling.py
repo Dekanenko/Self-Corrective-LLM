@@ -128,11 +128,10 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # Concatenate the main logits with the gated deletion logits.
         logits = torch.cat([main_logits, gated_del_logits], dim=-1)
 
-        # 6. Return the custom output object
+        # 5. Return the custom output object
         return SelfCorrectiveLlamaOutput(
             loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
-            hallucination_logits=all_hallucination_logits,
             past_key_values=transformer_outputs.past_key_values,
             hidden_states=None,
             attentions=transformer_outputs.attentions

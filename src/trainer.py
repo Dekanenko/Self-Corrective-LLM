@@ -39,7 +39,7 @@ class SelfCorrectionDataCollator:
 
 
 class SelfCorrectionTrainer(Trainer):
-    def __init__(self, *args, alpha=0.5, correction_weights: List[float] = None, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         A custom trainer that uses a weighted loss.
         
@@ -49,22 +49,9 @@ class SelfCorrectionTrainer(Trainer):
             correction_weights (List[float]): A list of weights for the 4 correction classes 
                                             (0: no-op, 1: del-s, 2: del-a).
         """
-        super().__init__(*args, **kwargs)
-        self.alpha = alpha
-        # Convert the list of weights to a tensor. It will be moved to the correct device in compute_loss.
-        if correction_weights:
-            self.correction_weight_tensor = torch.tensor(correction_weights)
-        else:
-            self.correction_weight_tensor = None
-            
-        # --- Custom State for Differential LR ---
+        # Pop our custom kwarg before passing to the parent to avoid a TypeError.
         self.custom_head_learning_rate = kwargs.pop("custom_head_learning_rate", None)
-            
-        # --- Custom Logging State ---
-        self._last_component_losses = {}
-        self._eval_accumulator = {
-            "token_losses": [], "hallucination_losses": [], "preds": [], "labels": [],
-        }
+        super().__init__(*args, **kwargs)
 
     def create_optimizer(self):
         """
@@ -80,11 +67,6 @@ class SelfCorrectionTrainer(Trainer):
             # Define the names of the custom, fully-trained modules
             head_module_names = [
                 "new_token_embeddings", 
-                "hallucination_gate_proj", 
-                "hallucination_up_proj", 
-                "hallucination_down_proj",
-                "hallucination_norm",
-                "hallucination_detector"
             ]
 
             for name, param in self.model.named_parameters():
@@ -133,7 +115,7 @@ class SelfCorrectionTrainer(Trainer):
             )
         return self.lr_scheduler
 
-    def log(self, logs: Dict[str, float]) -> None:
+    def log(self, logs: Dict[str, float], *args, **kwargs) -> None:
         """
         Overrides the default logging behavior to add both learning rates to the logs.
         """
@@ -143,22 +125,18 @@ class SelfCorrectionTrainer(Trainer):
                 logs['lr_lora'] = self.optimizer.param_groups[0]['lr']
                 logs['lr_head'] = self.optimizer.param_groups[1]['lr']
                 logs.pop('learning_rate') # remove the ambiguous default
-            
-            # Add custom component losses for training steps
-            if 'loss' in logs:
-                logs.update(self._last_component_losses)
 
-        super().log(logs)
+        super().log(logs, *args, **kwargs)
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         token_labels = inputs.get("labels")
         hallucination_labels = inputs.get("hallucination_labels")
-
+        
         outputs = model(**inputs)
         token_logits = outputs.get("logits")
         hallucination_logits = outputs.get("hallucination_logits")
-    
-        # --- 1. Calculate Token Prediction Loss (Cross-Entropy) ---
+
+        # --- Calculate Token Prediction Loss (Cross-Entropy) ---
         loss_fct_token = nn.CrossEntropyLoss(ignore_index=-100)
         
         shift_logits = token_logits[..., :-1, :].contiguous()

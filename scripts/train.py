@@ -74,6 +74,7 @@ def main():
 
     args, _ = parser.parse_known_args()
 
+    # The following hyperparameters are no longer used by the simplified model and trainer.
     # Parse the correction_weights from a JSON string
     correction_weights = json.loads(args.correction_weights)
     # check if the correction weights are a list of floats
@@ -92,11 +93,12 @@ def main():
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=compute_dtype,
         bnb_4bit_use_double_quant=True,
+        # Only the new embeddings are not quantized.
         llm_int8_skip_modules=[
-            "hallucination_gate_proj",
-            "hallucination_up_proj",
-            "hallucination_down_proj",
-            "hallucination_detector",
+            # "hallucination_gate_proj",
+            # "hallucination_up_proj",
+            # "hallucination_down_proj",
+            # "hallucination_detector",
             "new_token_embeddings",
         ],
     )
@@ -109,7 +111,7 @@ def main():
     print("--- Loading Model with BNB Config ---")
     model = AutoModelForCausalLM.from_pretrained(
         args.base_model_path,
-        config=model_config,
+        # config=model_config,
         quantization_config=bnb_config,
         trust_remote_code=True,
     )
@@ -134,12 +136,12 @@ def main():
             "embed_tokens",
             "lm_head",
         ],
-        # Fully fine-tune the custom detector.
+        # Only the new embeddings are fully fine-tuned.
         modules_to_save=[
-            "hallucination_gate_proj",
-            "hallucination_up_proj",
-            "hallucination_down_proj",
-            "hallucination_detector",
+            # "hallucination_gate_proj",
+            # "hallucination_up_proj",
+            # "hallucination_down_proj",
+            # "hallucination_detector",
             "new_token_embeddings"
         ],
     )
