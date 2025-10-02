@@ -133,7 +133,7 @@ class SelfCorrectionTrainer(Trainer):
             )
         return self.lr_scheduler
 
-    def log(self, logs: Dict[str, float]) -> None:
+    def log(self, logs: Dict[str, float], *args, **kwargs)
         """
         Overrides the default logging behavior to add both learning rates to the logs.
         """
@@ -148,7 +148,7 @@ class SelfCorrectionTrainer(Trainer):
             if 'loss' in logs:
                 logs.update(self._last_component_losses)
 
-        super().log(logs)
+        super().log(logs, *args, **kwargs)
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         token_labels = inputs.get("labels")
