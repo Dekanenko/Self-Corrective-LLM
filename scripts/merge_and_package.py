@@ -178,7 +178,8 @@ def merge_and_package(config_path: str):
                 "hallucination_gate_proj",
                 "hallucination_up_proj",
                 "hallucination_down_proj",
-                "hallucination_detector"
+                "hallucination_detector",
+                "new_token_embeddings",
             ],
         )
 
