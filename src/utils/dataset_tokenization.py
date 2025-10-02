@@ -77,7 +77,11 @@ def assign_hallucination_labels(
                 for j in range(i, prompt_token_len-1, -1):
                     if hallucination_labels[j] != 0 and item["input_ids"][j] != del_s_token_id:
                         hallucination_labels[j] = 2
-            
+    
+    for i in range(len(hallucination_labels)):
+        if hallucination_labels[i] == 2:
+            hallucination_labels[i] = 1
+
     item["hallucination_labels"] = hallucination_labels
     return item
 

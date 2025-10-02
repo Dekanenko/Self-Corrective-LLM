@@ -15,9 +15,9 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         
         self.num_new_tokens = 2
         self.original_vocab_size = config.vocab_size
-        self.alpha_boost = config.alpha_boost if "alpha_boost" in config else 5.0
-        self.tau = config.tau if "tau" in config else 0.7
-        self.max_boost = config.max_boost if "max_boost" in config else 8.0
+        self.deletion_boost_multiplier = config.deletion_boost_multiplier if "deletion_boost_multiplier" in config else 1.0
+        self.threshold = config.threshold if "threshold" in config else 0.6
+        self.eps = config.eps if "eps" in config else 1e-5
 
         # Create a new, small embedding layer for only the special tokens
         self.new_token_embeddings = nn.Embedding(self.num_new_tokens, config.hidden_size)
@@ -35,7 +35,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         self.hallucination_up_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
         self.hallucination_down_proj = nn.Linear(intermediate_size, config.hidden_size, bias=False)
         self.hallucination_norm = nn.LayerNorm(config.hidden_size)
-        self.hallucination_detector = nn.Linear(config.hidden_size, self.num_new_tokens + 1)
+        self.hallucination_detector = nn.Linear(config.hidden_size, 1)
     
     def forward(
         self, 
@@ -71,9 +71,6 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # New token logits from small, trainable embedding layer
         new_logits = F.linear(last_hidden, self.new_token_embeddings.weight)
 
-        # Concatenate to get logits over the full, expanded vocabulary
-        logits = torch.cat([main_logits, new_logits], dim=-1)
-
         # 4. SwiGLU-based hallucination detector
         gate_output = self.hallucination_gate_proj(last_hidden)
         up_output = self.hallucination_up_proj(last_hidden)
@@ -85,45 +82,51 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
 
         # Hallucination logits
         all_hallucination_logits = self.hallucination_detector(normalized_hidden)
+        hallucination_probs = torch.sigmoid(all_hallucination_logits)
 
-        # 5. Modify the token logits conditionally.
-        no_hall, del_s, del_a = all_hallucination_logits.split(1, dim=-1)
-        margin_s, margin_a = del_s - no_hall, del_a - no_hall
-    
-        boost_del_s = (self.alpha_boost * F.softplus(margin_s - self.tau)).clamp(max=self.max_boost)
-        boost_del_a = (self.alpha_boost * F.softplus(margin_a - self.tau)).clamp(max=self.max_boost)
+        # 5. Apply the gate to the deletion token logits.
+        # This implements a "soft gate" for training and a "hard gate" for inference.
+        if self.training:
+            # --- Training: A Precisely Masked Soft Gate ---
+            # To avoid conflicting gradients, we build a scaling factor tensor that
+            # modulates the deletion logits based on the ground truth labels.
+            
+            # 1. Create masks based on the ground truth labels.
+            mask_s_label = (labels == self.original_vocab_size)
+            mask_a_label = (labels == self.original_vocab_size + 1)
+            # A mask for when we are predicting a normal token (hallucination_label is 0).
+            mask_normal_token = (hallucination_labels == 0)
 
-        # Conditionally add the deletion logits.
-        if labels is not None:
-            # Training case: Apply boosts precisely based on the ground truth label.
-            # This prevents signal conflict by ensuring we only boost the correct token.
+            # 2. Build the scaling factor for each deletion logit.
+            # - If the label is <DEL_S>, we scale the <DEL_S> logit by the gate's probability.
+            # - If the label is <DEL_A>, we scale the <DEL_A> logit by the gate's probability.
+            # - If the label is a normal token, we scale BOTH deletion logits by the gate's probability.
+            # - Otherwise, the scaling factor is 1.0 (no scaling).
             
-            # Create separate masks for each deletion token.
-            mask_s = (labels == self.original_vocab_size).unsqueeze(-1)
-            mask_a = (labels == self.original_vocab_size + 1).unsqueeze(-1)
+            scaling_factor_s = torch.where(mask_s_label | mask_normal_token, hallucination_probs.squeeze(-1), 1.0)
+            scaling_factor_a = torch.where(mask_a_label | mask_normal_token, hallucination_probs.squeeze(-1), 1.0)
             
-            # Apply boosts only where the label matches the specific token.
-            to_add_s = torch.where(mask_s, boost_del_s, torch.zeros_like(boost_del_s))
-            to_add_a = torch.where(mask_a, boost_del_a, torch.zeros_like(boost_del_a))
-            
-            # Combine into the final tensor to add.
-            to_add = torch.cat([to_add_s, to_add_a], dim=-1)
+            # Combine and apply the gate.
+            scaling_factors = torch.stack([scaling_factor_s, scaling_factor_a], dim=-1)
+            gated_del_logits = new_logits * scaling_factors
         else:
-            # Inference case: Apply boosts precisely based on the margin threshold.
-            # This prevents "logit bleed" by only boosting the token that meets the criterion.
+            # --- Inference: Hard Gate ---
+            # We use a threshold to make a firm on/off decision.
+            gate_mask = hallucination_probs > self.threshold
             
-            # Create separate masks for each token's margin.
-            mask_s_active = margin_s > self.tau
-            mask_a_active = margin_a > self.tau
-            
-            # Calculate the boost for each token individually.
-            to_add_s = torch.where(mask_s_active, boost_del_s, torch.zeros_like(boost_del_s))
-            to_add_a = torch.where(mask_a_active, boost_del_a, torch.zeros_like(boost_del_a))
+            # Where the gate is open, use the original deletion logits with a boost.
+            # Where it's closed, suppress them to negative infinity.
 
-            # Combine into the final tensor to add.
-            to_add = torch.cat([to_add_s, to_add_a], dim=-1)
-        
-        logits[:, :, -self.num_new_tokens:].add_(to_add)
+            boosted_logits = new_logits + hallucination_probs * self.deletion_boost_multiplier
+
+            gated_del_logits = torch.where(
+                gate_mask,
+                boosted_logits,
+                torch.full_like(new_logits, torch.finfo(new_logits.dtype).min)
+            )
+
+        # Concatenate the main logits with the gated deletion logits.
+        logits = torch.cat([main_logits, gated_del_logits], dim=-1)
 
         # 6. Return the custom output object
         return SelfCorrectiveLlamaOutput(
