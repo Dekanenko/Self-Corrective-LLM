@@ -202,8 +202,18 @@ def main():
     trainer_s1.train()
     print("--- Stage 1 finished ---")
 
+    # --- MEMORY CLEANUP BETWEEN STAGES ---
+    print("--- Cleaning up memory between stages ---")
+    del trainer_s1
+    del training_args_s1
+    del train_dataset_s1
+    del eval_dataset_s1
+    torch.cuda.empty_cache()
+    import gc
+    gc.collect()
+
     # --- STAGE 2: STABILIZATION & INTEGRATION ---
-    last_checkpoint = get_last_checkpoint(training_args_s1.output_dir)
+    last_checkpoint = get_last_checkpoint(args.model_dir)
     print(f"--- Resuming from checkpoint for Stage 2: {last_checkpoint} ---")
 
     print("--- Loading Stage 2 dataset ---")
