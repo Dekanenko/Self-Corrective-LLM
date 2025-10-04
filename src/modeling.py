@@ -85,9 +85,9 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         hallucination_probs = torch.sigmoid(all_hallucination_logits)
 
         # 5. Apply the gate to the deletion token logits.
-        # This implements a "soft gate" for training and a "hard gate" for inference.
-        if self.training:
-            # --- Training: A Precisely Masked Soft Gate ---
+        # This implements a "soft gate" for training/validation and a "hard gate" for inference.
+        if labels is not None:
+            # --- Training/Validation: A Precisely Masked Soft Gate ---
             # To avoid conflicting gradients, we build a scaling factor tensor that
             # modulates the deletion logits based on the ground truth labels.
             
