@@ -43,14 +43,16 @@ def main():
     parser.add_argument("--base_model_path", type=str, default="/opt/ml/input/data/model")
 
     # Hyperparameters - Stage 1: Skill Acquisition
-    parser.add_argument("--epochs_s1", type=int, default=1, help="Number of epochs for Stage 1.")
-    parser.add_argument("--learning_rate_s1", type=float, default=2e-5, help="Base learning rate for Stage 1.")
+    parser.add_argument("--epochs_s1", type=int, default=2, help="Number of epochs for Stage 1.")
+    parser.add_argument("--learning_rate_s1", type=float, default=1e-4, help="Base learning rate for Stage 1.")
     parser.add_argument("--custom_head_learning_rate_s1", type=float, default=2e-4, help="Custom head learning rate for Stage 1.")
+    parser.add_argument("--alpha_s1", type=float, default=0.7, help="Alpha for Stage 1 (higher = more focus on token prediction).")
 
     # Hyperparameters - Stage 2: Stabilization
-    parser.add_argument("--epochs_s2", type=int, default=2, help="Number of epochs for Stage 2.")
-    parser.add_argument("--learning_rate_s2", type=float, default=2e-6, help="Base learning rate for Stage 2.")
-    parser.add_argument("--custom_head_learning_rate_s2", type=float, default=2e-5, help="Custom head learning rate for Stage 2.")
+    parser.add_argument("--epochs_s2", type=int, default=3, help="Number of epochs for Stage 2.")
+    parser.add_argument("--learning_rate_s2", type=float, default=5e-5, help="Base learning rate for Stage 2.")
+    parser.add_argument("--custom_head_learning_rate_s2", type=float, default=1e-4, help="Custom head learning rate for Stage 2.")
+    parser.add_argument("--alpha_s2", type=float, default=0.4, help="Alpha for Stage 2 (lower = more focus on hallucination detection).")
 
     # Shared Hyperparameters
     parser.add_argument("--train_batch_size", type=int, default=2)
@@ -151,7 +153,8 @@ def main():
 
     # --- STAGE 1: SKILL ACQUISITION ---
     print("--- Loading Stage 1 dataset ---")
-    dataset_s1_path = os.path.join(args.dataset_path, "_stage_1")
+    dataset_s1_path = args.dataset_path + "/training_data_stage_1"
+    print(f"Dataset path: {dataset_s1_path}")
     dataset_s1 = datasets.load_from_disk(dataset_s1_path)
     train_dataset_s1, eval_dataset_s1 = dataset_s1["train"], dataset_s1["test"]
     
@@ -193,7 +196,7 @@ def main():
         eval_dataset=eval_dataset_s1,
         tokenizer=tokenizer,
         data_collator=data_collator,
-        alpha=args.alpha,
+        alpha=args.alpha_s1,
         correction_weights=correction_weights,
         custom_head_learning_rate=args.custom_head_learning_rate_s1,
     )
@@ -208,16 +211,29 @@ def main():
     del training_args_s1
     del train_dataset_s1
     del eval_dataset_s1
+    del peft_model  # Delete Stage 1 model to free memory
+    del model
     torch.cuda.empty_cache()
     import gc
     gc.collect()
 
     # --- STAGE 2: STABILIZATION & INTEGRATION ---
     last_checkpoint = get_last_checkpoint(args.model_dir)
-    print(f"--- Resuming from checkpoint for Stage 2: {last_checkpoint} ---")
+    print(f"--- Loading model from Stage 1 checkpoint: {last_checkpoint} ---")
+
+    # Load the trained model from Stage 1 checkpoint
+    model_s2 = AutoModelForCausalLM.from_pretrained(
+        last_checkpoint,
+        config=model_config,
+        quantization_config=bnb_config,
+        trust_remote_code=True,
+    )
+    model_s2 = prepare_model_for_kbit_training(model_s2)
+    peft_model_s2 = get_peft_model(model_s2, peft_config)
 
     print("--- Loading Stage 2 dataset ---")
-    dataset_s2_path = os.path.join(args.dataset_path, "_stage_2")
+    dataset_s2_path = args.dataset_path + "/training_data_stage_2"
+    print(f"Dataset path: {dataset_s2_path}")
     dataset_s2 = datasets.load_from_disk(dataset_s2_path)
     train_dataset_s2, eval_dataset_s2 = dataset_s2["train"], dataset_s2["test"]
 
@@ -251,19 +267,19 @@ def main():
     )
 
     trainer_s2 = SelfCorrectionTrainer(
-        model=peft_model,
+        model=peft_model_s2,
         args=training_args_s2,
         train_dataset=train_dataset_s2,
         eval_dataset=eval_dataset_s2,
         tokenizer=tokenizer,
         data_collator=data_collator,
-        alpha=args.alpha,
+        alpha=args.alpha_s2,
         correction_weights=correction_weights,
         custom_head_learning_rate=args.custom_head_learning_rate_s2,
     )
 
     print("--- Starting training for Stage 2 ---")
-    trainer_s2.train(resume_from_checkpoint=last_checkpoint)
+    trainer_s2.train()  # Fresh training, no checkpoint resumption
     
     # 7. Save the final model
     print("--- Curriculum learning finished. Saving final model. ---")
