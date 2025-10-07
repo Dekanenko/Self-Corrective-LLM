@@ -49,6 +49,9 @@ class SelfCorrectionTrainer(Trainer):
             correction_weights (List[float]): A list of weights for the 4 correction classes 
                                             (0: no-op, 1: del-s, 2: del-a).
         """
+        # --- Custom State for Differential LR ---
+        self.custom_head_learning_rate = kwargs.pop("custom_head_learning_rate", None)
+
         super().__init__(*args, **kwargs)
         self.alpha = alpha
         # Convert the list of weights to a tensor. It will be moved to the correct device in compute_loss.
@@ -56,9 +59,6 @@ class SelfCorrectionTrainer(Trainer):
             self.correction_weight_tensor = torch.tensor(correction_weights)
         else:
             self.correction_weight_tensor = None
-            
-        # --- Custom State for Differential LR ---
-        self.custom_head_learning_rate = kwargs.pop("custom_head_learning_rate", None)
             
         # --- Custom Logging State ---
         self._last_component_losses = {}
