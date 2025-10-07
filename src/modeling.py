@@ -114,13 +114,23 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             # We use a threshold to make a firm on/off decision.
             gate_mask = hallucination_probs > self.threshold
             
+            # Prevent consecutive deletion tokens during inference
+            # Check if the previous token was a deletion token
+            prev_token_mask = torch.zeros_like(gate_mask, dtype=torch.bool)
+            if input_ids.shape[1] > 0:  # Ensure we have at least one token
+                prev_tokens = input_ids[:, -1]  # Get the last token for each sequence
+                prev_token_mask = (prev_tokens >= self.original_vocab_size)  # True if previous token was DEL_S or DEL_A
+            
+            # Apply both conditions: gate must be open AND previous token must not be a deletion token
+            final_gate_mask = gate_mask & ~prev_token_mask.unsqueeze(-1)
+            
             # Where the gate is open, use the original deletion logits with a boost.
             # Where it's closed, suppress them to negative infinity.
 
             boosted_logits = new_logits + hallucination_probs * self.deletion_boost_multiplier
 
             gated_del_logits = torch.where(
-                gate_mask,
+                final_gate_mask,
                 boosted_logits,
                 torch.full_like(new_logits, torch.finfo(new_logits.dtype).min)
             )

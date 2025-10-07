@@ -57,7 +57,6 @@ def main():
     # Shared Hyperparameters
     parser.add_argument("--train_batch_size", type=int, default=2)
     parser.add_argument("--eval_batch_size", type=int, default=2)
-    parser.add_argument("--alpha", type=float, default=0.3)
     parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0]', help='JSON string for a 2-element list of weights for BCE loss [weight_for_0, weight_for_1]')
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
     parser.add_argument("--optim", type=str, default="paged_adamw_8bit")
@@ -99,6 +98,7 @@ def main():
             "hallucination_gate_proj",
             "hallucination_up_proj",
             "hallucination_down_proj",
+            "hallucination_norm",
             "hallucination_detector",
             "new_token_embeddings",
         ],
