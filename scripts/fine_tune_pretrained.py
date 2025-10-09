@@ -15,6 +15,7 @@ from transformers import (
 from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training, PeftModel
 import datasets
 from transformers.trainer_utils import get_last_checkpoint
+import gc
 
 from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 
@@ -40,7 +41,7 @@ def main():
                        help="S3 path to the pre-trained model checkpoint (e.g., s3://bucket/path/model.tar.gz or s3://bucket/path/checkpoint/)")
 
     # Hyperparameters for fine-tuning
-    parser.add_argument("--epochs", type=int, default=2, help="Number of epochs for fine-tuning.")
+    parser.add_argument("--epochs", type=float, default=2, help="Number of epochs for fine-tuning.")
     parser.add_argument("--learning_rate", type=float, default=2e-5, help="Base learning rate.")
     parser.add_argument("--alpha", type=float, default=0.6, help="Alpha.")
 
@@ -155,12 +156,22 @@ def main():
         
         print("--- Checkpoint download and extraction completed ---")
         
+        # Debug: List all files in the checkpoint directory
+        print("--- DEBUG: Files in checkpoint directory ---")
+        for root, dirs, files in os.walk(temp_checkpoint_dir):
+            level = root.replace(temp_checkpoint_dir, '').count(os.sep)
+            indent = ' ' * 2 * level
+            print(f"{indent}{os.path.basename(root)}/")
+            subindent = ' ' * 2 * (level + 1)
+            for file in files:
+                print(f"{subindent}{file}")
+        
     except Exception as e:
         print(f"--- Error downloading/extracting checkpoint: {e} ---")
         raise
 
-    # 4. Load Base Model
-    print("--- Loading base model ---")
+    # 4. Load Base Model and Pre-trained Adapters
+    print("--- Loading base model and pre-trained adapters ---")
 
     # QLoRA configuration for 4-bit training
     print("--- Loading BNB Config ---")
@@ -180,166 +191,51 @@ def main():
         ],
     )
 
+    # Load the base model first, so it's always available
     print("--- Loading base model with BNB Config ---")
     model = AutoModelForCausalLM.from_pretrained(
         args.base_model_path,
         quantization_config=bnb_config,
         trust_remote_code=True,
     )
-
     print("--- Prepare model for kbit training ---")
     model = prepare_model_for_kbit_training(model)
 
-    # 5. Configure PEFT/LoRA
-    print("--- Configuring PEFT ---")
-    peft_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
-        r=args.lora_r,
-        lora_alpha=args.lora_alpha,
-        lora_dropout=args.lora_dropout,
-        bias="none",
-        target_modules=[
-            "q_proj", 
-            "k_proj", 
-            "v_proj", 
-            "o_proj", 
-            "gate_proj", 
-            "up_proj", 
-            "down_proj",
-            "embed_tokens",
-            "lm_head",
-        ],
-        modules_to_save=[
-            "hallucination_gate_proj",
-            "hallucination_up_proj",
-            "hallucination_down_proj",
-            "hallucination_detector",
-            "new_token_embeddings"
-        ],
-    )
-    
-    print("--- Applying PEFT to base model ---")
-    peft_model = get_peft_model(model, peft_config)
-    peft_model.print_trainable_parameters()
-
-    # 6. Load pre-trained weights
-    print("--- Loading pre-trained weights from checkpoint ---")
+    # 5. Load pre-trained adapters from checkpoint
+    print("--- Loading pre-trained adapters from checkpoint ---")
+    peft_model = None
     try:
-        # Load LoRA adapter weights first
-        if "adapter_model.bin" in os.listdir(temp_checkpoint_dir):
-            print("--- Loading LoRA adapter weights ---")
-            
-            # Load the adapter state dict directly
-            adapter_state_dict = torch.load(os.path.join(temp_checkpoint_dir, "adapter_model.bin"), map_location="cpu")
-            
-            # Load adapter config to understand the structure
-            adapter_config_path = os.path.join(temp_checkpoint_dir, "adapter_config.json")
-            if os.path.exists(adapter_config_path):
-                import json
-                with open(adapter_config_path, 'r') as f:
-                    adapter_config = json.load(f)
-                print(f"--- Adapter config loaded: {adapter_config.get('peft_type', 'unknown')} ---")
-            
-            # Apply LoRA weights to the existing peft_model
-            # The adapter_state_dict contains the LoRA weights with keys like "base_model.model.layers.0.self_attn.q_proj.lora_A.weight"
-            missing_keys, unexpected_keys = peft_model.load_state_dict(adapter_state_dict, strict=False)
-            
-            if missing_keys:
-                print(f"--- LoRA Missing keys: {len(missing_keys)} keys ---")
-                if len(missing_keys) < 10:  # Only print if not too many
-                    for key in missing_keys[:5]:
-                        print(f"    - {key}")
-            if unexpected_keys:
-                print(f"--- LoRA Unexpected keys: {len(unexpected_keys)} keys ---")
-                if len(unexpected_keys) < 10:  # Only print if not too many
-                    for key in unexpected_keys[:5]:
-                        print(f"    - {key}")
-            
-            print("--- LoRA adapter weights loaded successfully ---")
+        # Find the checkpoint directory
+        checkpoint_dir = None
+        for root, dirs, files in os.walk(temp_checkpoint_dir):
+            if "adapter_config.json" in files:
+                checkpoint_dir = root
+                break
         
-        # Load custom head weights from pytorch_model.bin
-        print("--- Loading custom head weights ---")
-        checkpoint = torch.load(os.path.join(temp_checkpoint_dir, "pytorch_model.bin"), map_location="cpu")
-        model_state_dict = checkpoint.get("model", checkpoint)
+        if not checkpoint_dir:
+            raise ValueError("No checkpoint directory found with adapter_config.json")
         
-        print(f"--- Checkpoint contains {len(model_state_dict)} parameters ---")
+        print(f"--- Found checkpoint directory: {checkpoint_dir} ---")
+
+        # Load the adapters onto the base model
+        print(f"--- Loading adapters from: {checkpoint_dir} ---")
+        peft_model = PeftModel.from_pretrained(model, checkpoint_dir)
+        print("--- Adapters loaded successfully ---")
+
+        peft_model.print_trainable_parameters()
         
-        # Load hallucination detector weights
-        hallucination_weights = {}
-        for key, value in model_state_dict.items():
-            if any(module in key for module in ["hallucination_gate_proj", "hallucination_up_proj", 
-                                              "hallucination_down_proj", "hallucination_detector", 
-                                              "new_token_embeddings"]):
-                hallucination_weights[key] = value
+        print("--- ✅ Pre-trained model and adapters loaded successfully ---")
         
-        print(f"--- Found {len(hallucination_weights)} hallucination detector weights in checkpoint ---")
-        if hallucination_weights:
-            print("--- Sample checkpoint hallucination weights:")
-            for key in list(hallucination_weights.keys())[:3]:
-                print(f"    - {key}")
-        
-        # Apply custom head weights
-        missing_keys, unexpected_keys = peft_model.load_state_dict(hallucination_weights, strict=False)
-        
-        if missing_keys:
-            print(f"--- Missing keys: {missing_keys} ---")
-        if unexpected_keys:
-            print(f"--- Unexpected keys: {unexpected_keys} ---")
-        
-        print("--- Pre-trained weights loaded successfully ---")
-        
-        # Validate that weights were loaded correctly
-        print("--- Validating loaded weights ---")
-        
-        # Check hallucination detector weights
-        hallucination_modules = ["hallucination_gate_proj", "hallucination_up_proj", 
-                               "hallucination_down_proj", "hallucination_detector", 
-                               "new_token_embeddings"]
-        
-        hallucination_params = []
-        lora_params = []
-        
-        for name, param in peft_model.named_parameters():
-            # Check for hallucination detector parameters
-            for module in hallucination_modules:
-                if module in name and param.requires_grad:
-                    hallucination_params.append(name)
-                    break
-            
-            # Check for LoRA parameters
-            if "lora_A" in name or "lora_B" in name:
-                lora_params.append(name)
-        
-        print(f"--- Found {len(hallucination_params)} hallucination detector parameters ---")
-        if hallucination_params:
-            print("--- Sample hallucination parameters:")
-            for param in hallucination_params[:3]:
-                print(f"    - {param}")
-        
-        print(f"--- Found {len(lora_params)} LoRA parameters ---")
-        if lora_params:
-            print("--- Sample LoRA parameters:")
-            for param in lora_params[:3]:
-                print(f"    - {param}")
-        
-        # Check if LoRA adapter configuration exists
-        if hasattr(peft_model, 'peft_config') and peft_model.peft_config:
-            print("--- LoRA adapter configuration present ---")
-        else:
-            print("--- WARNING: No LoRA adapter configuration found ---")
-        
-        # Final validation summary
-        if len(hallucination_params) > 0 and len(lora_params) > 0:
-            print("--- ✅ SUCCESS: Both LoRA and hallucination detector weights loaded ---")
-        elif len(hallucination_params) > 0:
-            print("--- ⚠️  PARTIAL: Only hallucination detector weights loaded ---")
-        elif len(lora_params) > 0:
-            print("--- ⚠️  PARTIAL: Only LoRA weights loaded ---")
-        else:
-            print("--- ❌ ERROR: No pre-trained weights loaded ---")
-        
+    except Exception as e:
+        print(f"--- Error loading pre-trained weights: {e} ---")
+        raise
+    finally:
         # Clean up checkpoint files immediately after loading to save disk space
         print("--- Cleaning up checkpoint files to save disk space ---")
+        del model
+        gc.collect()
+        torch.cuda.empty_cache()
+
         if args.pretrained_checkpoint_path.endswith('.tar.gz'):
             # Remove the extracted directory and tarball
             extract_dir = os.path.join(temp_checkpoint_dir, "extracted")
@@ -361,12 +257,13 @@ def main():
                 print(f"--- Removed {file} ---")
         
         print("--- Checkpoint cleanup completed ---")
-        
-    except Exception as e:
-        print(f"--- Error loading pre-trained weights: {e} ---")
-        raise
 
-    # 7. Load Dataset
+    if peft_model is None:
+        raise RuntimeError("PEFT model could not be loaded.")
+
+    peft_model.print_trainable_parameters()
+
+    # 6. Load Dataset
     print("--- Loading fine-tuning dataset ---")
     dataset = datasets.load_from_disk(args.dataset_path)
     train_dataset, eval_dataset = dataset["train"], dataset["test"]
@@ -374,7 +271,7 @@ def main():
     print(f"--- Train dataset size: {len(train_dataset)} ---")
     print(f"--- Eval dataset size: {len(eval_dataset)} ---")
 
-    # 8. Setup Trainer
+    # 7. Setup Trainer (Fresh training with pre-loaded weights)
     print("--- Setting up Trainer ---")
     training_args = TrainingArguments(
         output_dir=args.model_dir,
@@ -417,16 +314,17 @@ def main():
         correction_weights=correction_weights,
     )
 
-    # 9. Start Fine-tuning
+    # 8. Start Fine-tuning (Fresh training with pre-loaded weights)
     print("--- Starting fine-tuning ---")
+    print("--- NOTE: This is fresh training starting from step 0, but with pre-loaded weights ---")
     trainer.train()
     
-    # 10. Save the final model
+    # 9. Save the final model
     print("--- Fine-tuning finished. Saving final model. ---")
     trainer.save_model(args.model_dir)
     
-    # 11. Cleanup temporary files
-    import shutil
+    # 10. Cleanup temporary files
+    print("--- Cleaning up temporary files ---")
     shutil.rmtree(temp_checkpoint_dir)
     print("--- Temporary files cleaned up ---")
 
