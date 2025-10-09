@@ -92,6 +92,7 @@ def assign_hallucination_labels(
 def mask_token_labels(
     item: dict, 
     prompt_token_len: int,
+    del_w_token_id: int,
     del_s_token_id: int,
     del_a_token_id: int,
 ):
@@ -109,6 +110,9 @@ def mask_token_labels(
                 for j in range(i, prompt_token_len-1, -1):
                     labels[j] = -100
             
+            labels[i] = item["labels"][i]
+        
+        if item["labels"][i] == del_w_token_id:
             labels[i] = item["labels"][i]
     
     item["labels"] = labels
@@ -326,7 +330,7 @@ def process_data(
         model_inputs, prompt_token_len, del_w_token_id, del_s_token_id, del_a_token_id
     )
     model_inputs = mask_token_labels(
-        model_inputs, prompt_token_len, del_s_token_id, del_a_token_id
+        model_inputs, prompt_token_len, del_w_token_id, del_s_token_id, del_a_token_id
     )
 
     return model_inputs
