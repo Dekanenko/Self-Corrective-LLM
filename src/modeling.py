@@ -13,6 +13,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
     def __init__(self, config):
         super().__init__(config)
         
+        self.lookup_length = getattr(config, "lookup_length", 30)
         self.num_new_tokens = 2
         self.original_vocab_size = config.vocab_size
 
@@ -27,12 +28,29 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
                 mean_embeddings.unsqueeze(0).expand(self.num_new_tokens, -1)
             )
     
+    def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
+        # Get the full sequence of input IDs from the past, if available
+        past_input_ids = kwargs.get("past_input_ids", None)
+
+        # If past_input_ids exists, concatenate it with the new input_ids
+        if past_input_ids is not None:
+            input_ids = torch.cat([past_input_ids, input_ids], dim=-1)
+        
+        # Call the original prepare_inputs_for_generation method
+        model_inputs = super().prepare_inputs_for_generation(input_ids, past_key_values=past_key_values, **kwargs)
+
+        # Update model_kwargs to include the full input_ids sequence for the next step
+        model_inputs["past_input_ids"] = input_ids
+        
+        return model_inputs
+    
     def forward(
         self, 
         input_ids, 
         attention_mask=None, 
         labels=None, 
-        hallucination_labels=None, 
+        hallucination_labels=None,
+        past_input_ids=None,
         **kwargs
     ):
         # 1. Manually construct the input embeddings
@@ -64,23 +82,28 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # Concatenate to get logits over the full, expanded vocabulary
         logits = torch.cat([main_logits, new_logits], dim=-1)
 
-        # # 4. During inference, prevent consecutive deletion tokens.
-        # if not self.training:
-        #     # Get the last token for each sequence in the batch.
-        #     prev_token = input_ids[:, -1]
+        # 4. During inference, prevent deletion tokens if one was used recently.
+        if not self.training and self.lookup_length > 0:
+            # Use past_input_ids if available (during generation), otherwise use input_ids
+            ids_to_check = past_input_ids if past_input_ids is not None else input_ids
             
-        #     # Create a boolean mask for sequences where the last token was a deletion token.
-        #     prev_was_del_s = (prev_token == self.original_vocab_size)
-        #     prev_was_del_a = (prev_token == self.original_vocab_size + 1)
-        #     mask = prev_was_del_s | prev_was_del_a
+            if ids_to_check.shape[1] > 0:
+                # Check the last `lookup_length` tokens for deletion tokens.
+                lookback_window = ids_to_check[:, -self.lookup_length :]
 
-        #     # If any sequence in the batch ended with a deletion token...
-        #     if mask.any():
-        #         # ...suppress the deletion token logits for the current step in those sequences.
-        #         # We only modify the last token in the sequence, which is the current prediction.
-        #         suppress_value = torch.finfo(logits.dtype).min
-        #         logits[mask, -1, self.original_vocab_size] = suppress_value
-        #         logits[mask, -1, self.original_vocab_size + 1] = suppress_value
+                del_s_token_id = self.original_vocab_size
+                del_a_token_id = self.original_vocab_size + 1
+
+                # Check if deletion tokens are present in the lookback window for each sequence
+                had_del_s = (lookback_window == del_s_token_id).any(dim=1)
+                had_del_a = (lookback_window == del_a_token_id).any(dim=1)
+                mask = had_del_s | had_del_a
+
+                if mask.any():
+                    # For sequences with a recent deletion token, suppress the logits of deletion tokens
+                    suppress_value = torch.finfo(logits.dtype).min
+                    logits[mask, -1, del_s_token_id] = suppress_value
+                    logits[mask, -1, del_a_token_id] = suppress_value
 
         # 5. Return the custom output object
         return SelfCorrectiveLlamaOutput(

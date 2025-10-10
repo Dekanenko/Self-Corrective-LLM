@@ -86,3 +86,5 @@ Icon
 /dataset/raw_model_responses/**/*.json
 /dataset/processed_data/**/*.json
 /dataset/training*/
+/dataset/tuning*/
+/dataset/s*/
