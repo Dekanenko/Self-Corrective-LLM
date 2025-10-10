@@ -27,6 +27,12 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             self.new_token_embeddings.weight.data.copy_(
                 mean_embeddings.unsqueeze(0).expand(self.num_new_tokens, -1)
             )
+
+        intermediate_size = config.intermediate_size
+        self.hallucination_gate_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
+        self.hallucination_up_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
+        self.hallucination_down_proj = nn.Linear(intermediate_size, config.hidden_size, bias=False)
+        self.hallucination_detector = nn.Linear(config.hidden_size, self.num_new_tokens + 1)
     
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
         # Get the full sequence of input IDs from the past, if available
@@ -109,6 +115,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         return SelfCorrectiveLlamaOutput(
             loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
+            hallucination_logits=all_hallucination_logits,
             past_key_values=transformer_outputs.past_key_values,
             hidden_states=None,
             attentions=transformer_outputs.attentions

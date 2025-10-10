@@ -1,3 +1,5 @@
 datasets==4.0.0
 wandb
 scikit-learn
+boto3
+shutil
