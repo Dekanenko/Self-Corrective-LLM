@@ -13,7 +13,8 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
     def __init__(self, config):
         super().__init__(config)
         
-        self.num_new_tokens = 3
+        self.lookup_length = getattr(config, "lookup_length", 30)
+        self.num_new_tokens = 2
         self.original_vocab_size = config.vocab_size
 
         # Create a new, small embedding layer for only the special tokens
@@ -33,12 +34,29 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         self.hallucination_down_proj = nn.Linear(intermediate_size, config.hidden_size, bias=False)
         self.hallucination_detector = nn.Linear(config.hidden_size, self.num_new_tokens + 1)
     
+    def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
+        # Get the full sequence of input IDs from the past, if available
+        past_input_ids = kwargs.get("past_input_ids", None)
+
+        # If past_input_ids exists, concatenate it with the new input_ids
+        if past_input_ids is not None:
+            input_ids = torch.cat([past_input_ids, input_ids], dim=-1)
+        
+        # Call the original prepare_inputs_for_generation method
+        model_inputs = super().prepare_inputs_for_generation(input_ids, past_key_values=past_key_values, **kwargs)
+
+        # Update model_kwargs to include the full input_ids sequence for the next step
+        model_inputs["past_input_ids"] = input_ids
+        
+        return model_inputs
+    
     def forward(
         self, 
         input_ids, 
         attention_mask=None, 
         labels=None, 
-        hallucination_labels=None, 
+        hallucination_labels=None,
+        past_input_ids=None,
         **kwargs
     ):
         # 1. Manually construct the input embeddings
@@ -70,55 +88,30 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         # Concatenate to get logits over the full, expanded vocabulary
         logits = torch.cat([main_logits, new_logits], dim=-1)
 
-        # 4. SwiGLU-based hallucination detector
-        gate_output = self.hallucination_gate_proj(last_hidden)
-        up_output = self.hallucination_up_proj(last_hidden)
-        gated_hidden = F.silu(gate_output) * up_output
-        detector_hidden = self.hallucination_down_proj(gated_hidden)
-
-        # Hallucination logits
-        all_hallucination_logits = self.hallucination_detector(detector_hidden)
-
-        # 5. Modify the token logits conditionally.
-        deletion_logits = all_hallucination_logits[..., 1:] # skip the first token (no hallucination)
-        deletion_tokens_boost = F.softplus(deletion_logits)
-
-        # Conditionally add the deletion logits.
-        if hallucination_labels is not None and labels is not None:
-            # Training case:
-            # Condition 1: The hallucination label is 0 (no hallucination)
-            mask_no_hallucination = (hallucination_labels == 0)
-
-            # Condition 2: The next token is one of the deletion tokens.
-            # Check if the token ID is within the range of the last `num_new_tokens` in the vocab
-            vocab_size = logits.shape[-1]
-            mask_is_deletion_token = (labels >= (vocab_size - self.num_new_tokens)) & (labels < vocab_size)
+        # 4. During inference, prevent deletion tokens if one was used recently.
+        if not self.training and self.lookup_length > 0:
+            # Use past_input_ids if available (during generation), otherwise use input_ids
+            ids_to_check = past_input_ids if past_input_ids is not None else input_ids
             
-            # Combine masks and create the tensor to add.
-            combined_mask = (mask_no_hallucination | mask_is_deletion_token).unsqueeze(-1)
-            to_add = torch.where(
-                combined_mask,
-                deletion_tokens_boost,
-                torch.zeros_like(deletion_tokens_boost)
-            )
-        else:
-            # Inference case: The hallucination detector's decision becomes a hard gate.
-            hallucination_decision = torch.argmax(all_hallucination_logits, dim=-1)
+            if ids_to_check.shape[1] > 0:
+                # Check the last `lookup_length` tokens for deletion tokens.
+                lookback_window = ids_to_check[:, -self.lookup_length :]
 
-            # Create a mask that is True only when a hallucination is detected (decision != 0)
-            hallucination_present_mask = (hallucination_decision != 0).unsqueeze(-1)
+                del_s_token_id = self.original_vocab_size
+                del_a_token_id = self.original_vocab_size + 1
 
-            # Where the mask is True, use the softplus boost.
-            # Where the mask is False, use a large negative value to suppress deletion.
-            to_add = torch.where(
-                hallucination_present_mask,
-                deletion_tokens_boost,
-                torch.full_like(deletion_tokens_boost, torch.finfo(deletion_tokens_boost.dtype).min) # Suppress if no hallucination
-            )
-        
-        logits[:, :, -self.num_new_tokens:].add_(to_add)
+                # Check if deletion tokens are present in the lookback window for each sequence
+                had_del_s = (lookback_window == del_s_token_id).any(dim=1)
+                had_del_a = (lookback_window == del_a_token_id).any(dim=1)
+                mask = had_del_s | had_del_a
 
-        # 6. Return the custom output object
+                if mask.any():
+                    # For sequences with a recent deletion token, suppress the logits of deletion tokens
+                    suppress_value = torch.finfo(logits.dtype).min
+                    logits[mask, -1, del_s_token_id] = suppress_value
+                    logits[mask, -1, del_a_token_id] = suppress_value
+
+        # 5. Return the custom output object
         return SelfCorrectiveLlamaOutput(
             loss=None, # Loss calculation is handled by the Trainer
             logits=logits,
