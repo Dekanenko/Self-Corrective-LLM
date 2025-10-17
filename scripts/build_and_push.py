@@ -41,9 +41,8 @@ def hf_login():
     login(token=token)
     logger.info("Successfully logged in to Hugging Face Hub.")
 
-def create_model_card(repo_id: str, base_model: str, special_tokens: list) -> str:
+def create_model_card(repo_id: str, base_model: str) -> str:
     """Generates a professional README.md model card."""
-    special_tokens_str = ", ".join(f"`{token}`" for token in special_tokens)
     # NOTE: It is your responsibility to use the correct license identifier for the base model.
     # For example, for Llama 3 8B Instruct, it is "meta-llama/llama-3-8b-instruct-license".
     # See the original model card on the Hub for the correct value.
@@ -59,18 +58,15 @@ base_model: {base_model}
 
 This is a version of `{base_model}` modified with a custom architecture to support self-correction via hallucination detection.
 
-This model, an instance of `SelfCorrectiveLlama`, includes a hallucination detection head that modifies the logits of special tokens to aid in content generation and revision.
-
-## Special Tokens
-
-The tokenizer has been expanded to include the following special tokens: {special_tokens_str}.
+This model, an instance of `SelfCorrectiveLlama`, includes a hallucination detection head that can intervene during generation to insert corrective instructions like `[delete previous sentence]`.
 
 ## How to Use
 
-Because this model uses a custom architecture, you **must** use `trust_remote_code=True` when loading it. The required `modeling.py` file is included in this repository.
+Because this model uses a custom architecture with a modified `generate` method, you **must** use `trust_remote_code=True` when loading it. The required `modeling.py` file is included in this repository.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
 model_name = "{repo_id}"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -78,12 +74,24 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 # Important: You must trust the remote code
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    trust_remote_code=True
+    trust_remote_code=True,
+    torch_dtype=torch.bfloat16 # or your preferred dtype
+).to("cuda") # move model to GPU
+
+# You can now use the model's custom generate method
+prompt = "YOUR PROMPT HERE" # your prompt here
+inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+
+# The custom generate method requires the tokenizer instance
+generated_ids = model.generate(
+    inputs.input_ids,
+    tokenizer=tokenizer,
+    max_new_tokens=100,
+    temperature=0.7
 )
 
-# You can now use the model for generation
-# For example, to get hallucination probabilities:
-# (sequences, p_halls) = model.generate(..., output_p_hall=True)
+generated_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+print(generated_text)
 ```
 
 ## Model Details
@@ -104,7 +112,6 @@ def build_and_push(config_path: str):
     base_model_name = config["base_model_name"]
     hf_repo_id = config["hf_repo_id"]
     local_output_dir = config["local_output_dir"]
-    special_tokens = config["special_tokens"]
     model_code_path = config["model_code_path"]
 
     if not os.path.exists(model_code_path):
@@ -124,9 +131,6 @@ def build_and_push(config_path: str):
         torch_dtype="auto",
         device_map="auto"
     )
-
-    logger.info(f"Adding {len(special_tokens)} special tokens: {special_tokens}")
-    tokenizer.add_special_tokens({'additional_special_tokens': special_tokens})
 
     logger.info("Creating instance of the custom SelfCorrectiveLlama model...")
     # This is a critical step for Hub integration
@@ -161,7 +165,7 @@ def build_and_push(config_path: str):
     shutil.copy(model_code_path, os.path.join(local_output_dir, "modeling.py"))
 
     logger.info("Creating and writing model card (`README.md`)...")
-    readme_content = create_model_card(hf_repo_id, base_model_name, special_tokens)
+    readme_content = create_model_card(hf_repo_id, base_model_name)
     with open(os.path.join(local_output_dir, "README.md"), "w") as f:
         f.write(readme_content)
 
@@ -169,7 +173,7 @@ def build_and_push(config_path: str):
     logger.info(f"Deploying model to Hugging Face Hub at repository: {hf_repo_id}")
     api = HfApi()
     
-    logger.info("Creating repository on the Hub (if it doesn't exist)...")
+    logger.info("Creating rxepository on the Hub (if it doesn't exist)...")
     api.create_repo(repo_id=hf_repo_id, repo_type="model", exist_ok=True)
 
     logger.info(f"Uploading contents of {local_output_dir} to {hf_repo_id}...")

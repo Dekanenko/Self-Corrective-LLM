@@ -62,6 +62,19 @@ class SelfCorrectionTrainer(Trainer):
             "token_losses": [], "hallucination_losses": [], "preds": [], "labels": [],
         }
 
+
+    def log(self, logs: Dict[str, float]) -> None:
+        """
+        Overrides the default logging behavior to add both learning rates to the logs.
+        """
+        # Add the learning rates from both parameter groups to the logs
+        if self.state.is_local_process_zero and self.optimizer is not None:
+            # Add custom component losses for training steps
+            if 'loss' in logs:
+                logs.update(self._last_component_losses)
+
+        super().log(logs)
+
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         token_labels = inputs.get("labels")
         hallucination_labels = inputs.get("hallucination_labels")

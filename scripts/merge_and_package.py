@@ -50,23 +50,47 @@ base_model: {base_model}
 
 # {repo_id}
 
-This is a fine-tuned version of `{base_model}` that has been trained to detect and mitigate hallucinations in generated text.
+This is a fine-tuned version of `{base_model}`. The LoRA adapter has been merged into the base model. This model includes a custom hallucination detection head that can intervene during generation to insert corrective instructions.
 
 ## How to Use
 
-Because this model uses a custom architecture, you **must** use `trust_remote_code=True` when loading it.
+Because this model uses a custom architecture with a modified `generate` method, you **must** use `trust_remote_code=True` when loading it. The required `modeling.py` file is included in this repository.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
 model_name = "{repo_id}"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
+# Important: You must trust the remote code
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    trust_remote_code=True
+    trust_remote_code=True,
+    torch_dtype=torch.bfloat16 # or your preferred dtype
+).to("cuda") # move model to GPU
+
+# You can now use the model's custom generate method
+prompt = "YOUR PROMPT HERE" # your prompt here
+inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+
+# The custom generate method requires the tokenizer instance
+generated_ids = model.generate(
+    inputs.input_ids,
+    tokenizer=tokenizer,
+    max_new_tokens=100,
+    temperature=0.7
 )
+
+generated_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+print(generated_text)
 ```
+
+## Model Details
+
+This model was programmatically merged and uploaded using a deployment script. The custom class `SelfCorrectiveLlama` can be found in the `modeling.py` file.
+
+The code in `modeling.py` is licensed under the Apache 2.0 License. The model weights are subject to the original license of the base model.
 """
 
 def download_s3_folder(s3_uri: str, local_path: str):
@@ -175,11 +199,11 @@ def merge_and_package(config_path: str):
             bnb_4bit_use_double_quant=True,
             # This is crucial: we must not quantize the modules that were fully fine-tuned.
             llm_int8_skip_modules=[
-                # "hallucination_gate_proj",
-                # "hallucination_up_proj",
-                # "hallucination_down_proj",
-                # "hallucination_detector",
-                "new_token_embeddings",
+                "hallucination_gate_proj",
+                "hallucination_up_proj",
+                "hallucination_down_proj",
+                "hallucination_detector",
+                "hallucination_norm",
             ],
         )
 
