@@ -218,7 +218,7 @@ def main():
         quantization_config=bnb_config,
         trust_remote_code=True,
     )
-    # FIX: The model must be prepared for k-bit training again after being loaded.
+    # The model must be prepared for k-bit training again after being loaded.
     model_s2 = prepare_model_for_kbit_training(model_s2)
     
     print("--- Loading Stage 2 dataset ---")
