@@ -22,6 +22,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         self.hallucination_up_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
         self.hallucination_down_proj = nn.Linear(intermediate_size, config.hidden_size, bias=False)
         self.hallucination_detector = nn.Linear(config.hidden_size, self.num_new_tokens + 1)
+        self.hallucination_norm = nn.LayerNorm(config.hidden_size)
     
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
         # Get the full sequence of input IDs from the past, if available
