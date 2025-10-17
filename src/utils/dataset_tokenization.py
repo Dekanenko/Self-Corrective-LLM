@@ -51,6 +51,7 @@ def add_deletion_instruction(input_text: str, special_instruction: str, insertio
 def assign_hallucination_labels(
     item: dict, 
     prompt_token_len: int,
+    del_w_token_id: int,
     del_s_token_id: int,
     del_a_token_id: int,
 ):
@@ -63,7 +64,11 @@ def assign_hallucination_labels(
                 j += 1
             
             if j-1 != i:
-                if item["input_ids"][j-1] == del_a_token_id:
+                if item["input_ids"][j-1] == del_s_token_id:
+                    hallucination_labels[i:j] = [2] * (j-i)
+                elif item["input_ids"][j-1] == del_a_token_id:
+                    hallucination_labels[i:j] = [3] * (j-i)
+                elif j-i > 2 and item["input_ids"][j-1] != del_w_token_id:
                     hallucination_labels[i:j] = [2] * (j-i)
             i = j
         else:
@@ -71,12 +76,14 @@ def assign_hallucination_labels(
         
     for i in range(prompt_token_len, len(hallucination_labels)):
         if hallucination_labels[i] != 0:
-            if item["input_ids"][i] == del_s_token_id:
+            if item["input_ids"][i] == del_w_token_id:
                 hallucination_labels[i] = 1
+            elif item["input_ids"][i] == del_s_token_id:
+                hallucination_labels[i] = 2
             elif item["input_ids"][i] == del_a_token_id:
                 for j in range(i, prompt_token_len-1, -1):
-                    if hallucination_labels[j] != 0 and item["input_ids"][j] != del_s_token_id:
-                        hallucination_labels[j] = 2
+                    if hallucination_labels[j] != 0 and (item["input_ids"][j] != del_w_token_id or item["input_ids"][j] != del_s_token_id):
+                        hallucination_labels[j] = 3
             
     item["hallucination_labels"] = hallucination_labels
     return item
@@ -85,6 +92,7 @@ def assign_hallucination_labels(
 def mask_token_labels(
     item: dict, 
     prompt_token_len: int,
+    del_w_token_id: int,
     del_s_token_id: int,
     del_a_token_id: int,
 ):
@@ -102,6 +110,9 @@ def mask_token_labels(
                 for j in range(i, prompt_token_len-1, -1):
                     labels[j] = -100
             
+            labels[i] = item["labels"][i]
+        
+        if item["labels"][i] == del_w_token_id:
             labels[i] = item["labels"][i]
     
     item["labels"] = labels
@@ -142,6 +153,7 @@ def process_data(
     tokenizer: AutoTokenizer, 
     special_instruction: str, 
     insertion_marker: str,
+    del_w_token_id: int,
     del_s_token_id: int,
     del_a_token_id: int,
     del_s_replacement: list[int],
@@ -207,7 +219,6 @@ def process_data(
     prompt = add_deletion_instruction(item["input"], special_instruction, insertion_marker)
     completion = f'{item["correct_response"]}<|eot_id|>'
     full_text = prompt + completion
-    full_text = full_text.replace("\\n", "\n")
     
     # 2. Tokenize the full text with offset mappings
     model_inputs = tokenizer(
@@ -234,11 +245,18 @@ def process_data(
         for text_to_find in item.get("hallucinated_text", []):
             if not text_to_find:
                 continue
-
-            text_to_find = text_to_find.replace("\\n", "\n")
-            # Escape the text_to_find to safely use it in a regex pattern
-            pattern = re.escape(text_to_find)
-
+            
+            try:
+                cleaned_text = codecs.decode(text_to_find, 'unicode_escape')
+            except UnicodeDecodeError as e:
+                # This error occurs with a trailing backslash (common in LaTeX).
+                # Fall back to using the text as-is.
+                cleaned_text = text_to_find
+            
+            # Escape the cleaned text to safely use it in a regex pattern
+            pattern = re.escape(cleaned_text)
+            
+            # pattern = re.escape(text_to_find)
             for match in re.finditer(pattern, full_text[prompt_char_len:]):
                 start_index = match.start() + prompt_char_len
                 end_index = match.end() + prompt_char_len
@@ -274,8 +292,29 @@ def process_data(
         # --- Pass 2: Special handling for deletion tokens ---
         for i in range(prompt_token_len, len(input_ids)):
             token_id = input_ids[i]
+
+            if token_id == del_w_token_id:
+                # Label the <DEL_W> token itself.
+                hallucination_labels[i] = 1
+                
+                # Ensure there is a token before it to delete.
+                if i > prompt_token_len:
                     
-            if token_id == del_s_token_id or token_id == del_a_token_id:
+                    # Start backtracking from the token immediately before <DEL_W>.
+                    for j in range(i - 1, prompt_token_len - 1, -1):
+                        # Label the current token as part of the deleted word.
+                        hallucination_labels[j] = 1
+                        
+                        # Get the actual text of the token using its offset.
+                        tok_start_char, tok_end_char = offset_mapping[j]
+                        token_text = full_text[tok_start_char:tok_end_char]
+                        
+                        # If the token starts with a space or is a single punctuation mark
+                        # that acts as a boundary, we've found the start of the word.
+                        if token_text.startswith((' ', '\n', '\t')):
+                            break
+                    
+            elif token_id == del_s_token_id or token_id == del_a_token_id:
                 # Label other deletion tokens (<DEL_S>, <DEL_A>) as 1.
                 hallucination_labels[i] = 1
             
@@ -295,12 +334,11 @@ def process_data(
                 
                 # Scan backwards from the token before the deletion token.
                 for j in range(i - 1, prompt_token_len - 1, -1):
-                    # if not capture_whole_sentence and token_id == del_s_token_id and input_ids[j] == del_w_token_id:
-                    #     capture_whole_sentence = True
+                    if not capture_whole_sentence and token_id == del_s_token_id and input_ids[j] == del_w_token_id:
+                        capture_whole_sentence = True
                 
                     if not capture_whole_sentence and hallucination_labels[j] == 1:
-                        # found_other_hallucination = True
-                        span_start_idx = j + 1
+                        found_other_hallucination = True
                         break
                     
                     # For <DEL_S>, stop if we find a sentence boundary.
@@ -321,10 +359,10 @@ def process_data(
     del model_inputs["offset_mapping"]
 
     model_inputs = assign_hallucination_labels(
-        model_inputs, prompt_token_len, del_s_token_id, del_a_token_id
+        model_inputs, prompt_token_len, del_w_token_id, del_s_token_id, del_a_token_id
     )
     model_inputs = mask_token_labels(
-        model_inputs, prompt_token_len, del_s_token_id, del_a_token_id
+        model_inputs, prompt_token_len, del_w_token_id, del_s_token_id, del_a_token_id
     )
 
     model_inputs = replace_deletion_tokens(

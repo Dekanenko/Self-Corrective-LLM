@@ -1,10 +1,9 @@
-from transformers import Trainer, PreTrainedTokenizerBase, training_args
+from transformers import Trainer, PreTrainedTokenizerBase
 import torch.nn as nn
 import torch
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from sklearn.metrics import f1_score
-from transformers.optimization import AdamW, get_scheduler
 
 @dataclass
 class SelfCorrectionDataCollator:
@@ -47,7 +46,7 @@ class SelfCorrectionTrainer(Trainer):
             alpha (float): The weight for the token prediction loss. 
                            The hallucination loss will be weighted by (1 - alpha).
             correction_weights (List[float]): A list of weights for the 4 correction classes 
-                                            (0: no-op, 1: del-s, 2: del-a).
+                                            (0: no-op, 1: del-w, 2: del-s, 3: del-a).
         """
         super().__init__(*args, **kwargs)
         self.alpha = alpha
@@ -130,6 +129,11 @@ class SelfCorrectionTrainer(Trainer):
                 self._eval_accumulator["labels"].extend(active_labels.cpu().numpy())
         
         return (custom_loss, outputs) if return_outputs else custom_loss
+
+    def log(self, logs: Dict[str, float], *args, **kwargs) -> None:
+        if self.state.is_local_process_zero and 'loss' in logs:
+            logs.update(self._last_component_losses)
+        super().log(logs, *args, **kwargs)
 
     def evaluate(self, eval_dataset=None, ignore_keys=None, metric_key_prefix: str = "eval"):
         # The dataloader needs to be created from the dataset.

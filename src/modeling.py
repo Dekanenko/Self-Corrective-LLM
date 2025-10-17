@@ -13,6 +13,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
     def __init__(self, config):
         super().__init__(config)
         
+        self.lookup_length = getattr(config, "lookup_length", 30)
         self.num_new_tokens = 2
         self.deletion_threshold = config.deletion_threshold if "deletion_threshold" in config else 0.7
 
@@ -20,15 +21,31 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         self.hallucination_gate_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
         self.hallucination_up_proj = nn.Linear(config.hidden_size, intermediate_size, bias=False)
         self.hallucination_down_proj = nn.Linear(intermediate_size, config.hidden_size, bias=False)
-        self.hallucination_norm = nn.LayerNorm(config.hidden_size)
         self.hallucination_detector = nn.Linear(config.hidden_size, self.num_new_tokens + 1)
+    
+    def prepare_inputs_for_generation(self, input_ids, past_key_values=None, **kwargs):
+        # Get the full sequence of input IDs from the past, if available
+        past_input_ids = kwargs.get("past_input_ids", None)
+
+        # If past_input_ids exists, concatenate it with the new input_ids
+        if past_input_ids is not None:
+            input_ids = torch.cat([past_input_ids, input_ids], dim=-1)
+        
+        # Call the original prepare_inputs_for_generation method
+        model_inputs = super().prepare_inputs_for_generation(input_ids, past_key_values=past_key_values, **kwargs)
+
+        # Update model_kwargs to include the full input_ids sequence for the next step
+        model_inputs["past_input_ids"] = input_ids
+        
+        return model_inputs
     
     def forward(
         self, 
         input_ids, 
         attention_mask=None, 
         labels=None, 
-        hallucination_labels=None, 
+        hallucination_labels=None,
+        past_input_ids=None,
         **kwargs
     ):
         # Pass inputs through the base LLaMA model.
