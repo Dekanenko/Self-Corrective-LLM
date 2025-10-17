@@ -4,6 +4,8 @@ import argparse
 import os
 import json
 import torch
+import shutil
+import gc
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -13,6 +15,7 @@ from transformers import (
 )
 from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
 import datasets
+from transformers.trainer_utils import get_last_checkpoint
 
 from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 
@@ -28,8 +31,8 @@ def main():
         if torch.cuda.is_available():
             torch.cuda.set_device(local_rank)
             
-    # 1. Parse SageMaker-provided arguments
-    parser = argparse.ArgumentParser()
+    # 1. Parse Arguments
+    parser = argparse.ArgumentParser(description="Two-stage training script for the Self-Corrective LLaMA model.")
 
     # --- SageMaker-specific arguments ---
      # The directory where the final model artifacts should be saved.
@@ -41,14 +44,19 @@ def main():
     # A dedicated input channel for the base model.
     parser.add_argument("--base_model_path", type=str, default="/opt/ml/input/data/model")
 
-    # Hyperparameters
-    parser.add_argument("--epochs", type=int, default=1)
+    # --- Stage 1 Hyperparameters (Detector Training) ---
+    parser.add_argument("--epochs_s1", type=int, default=1, help="Number of epochs for Stage 1.")
+    parser.add_argument("--learning_rate_s1", type=float, default=2e-4, help="Learning rate for Stage 1.")
+    
+    # --- Stage 2 Hyperparameters (Joint Training) ---
+    parser.add_argument("--epochs_s2", type=int, default=2, help="Number of epochs for Stage 2.")
+    parser.add_argument("--learning_rate_s2", type=float, default=2e-5, help="Learning rate for Stage 2.")
+    parser.add_argument("--alpha_s2", type=float, default=0.3, help="Alpha for Stage 2 (balances token and hallucination loss).")
+
+    # --- Shared Hyperparameters ---
     parser.add_argument("--train_batch_size", type=int, default=2)
     parser.add_argument("--eval_batch_size", type=int, default=2)
-    parser.add_argument("--learning_rate", type=float, default=2e-5)
-    parser.add_argument("--custom_head_learning_rate", type=float, default=2e-4)
-    parser.add_argument("--alpha", type=float, default=0.3)
-    parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0, 6.0]')
+    parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0, 6.0]', help='JSON string for a 3-element list for [no-op, del-s, del-a] weights.')
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
     parser.add_argument("--optim", type=str, default="paged_adamw_8bit")
     parser.add_argument("--weight_decay", type=float, default=0.01)
@@ -61,17 +69,23 @@ def main():
     parser.add_argument("--lora_r", type=int, default=8)
     parser.add_argument("--lora_alpha", type=int, default=32)
     parser.add_argument("--lora_dropout", type=float, default=0.05)
-    parser.add_argument("--warmup_ratio", type=float, default=0.03, help="Linear warmup over warmup_ratio fraction of total steps.")
-    parser.add_argument("--max_grad_norm", type=float, default=40.0, help="The maximum gradient norm for clipping.")
+    parser.add_argument("--warmup_ratio", type=float, default=0.03)
+    parser.add_argument("--max_grad_norm", type=float, default=40.0)
 
     args, _ = parser.parse_known_args()
-
-    # Parse the correction_weights from a JSON string
     correction_weights = json.loads(args.correction_weights)
-    # check if the correction weights are a list of floats
-    print(f"--- Correction weights type: {correction_weights[0].__class__} ---")
+    
+    # Define a dedicated directory for the Stage 1 final checkpoint
+    stage_1_checkpoint_dir = os.path.join(args.model_dir, "stage_1_final")
+    stage_1_checkpoints_path = os.path.join(args.model_dir, "s1_checkpoints")
 
-    # 2. Load Tokenizer and Model
+    # --- Pre-run Cleanup ---
+    # Clean up the Stage 1 checkpoint directory to ensure a fresh start.
+    if os.path.exists(stage_1_checkpoints_path):
+        print(f"--- Removing existing Stage 1 checkpoints from {stage_1_checkpoints_path} ---")
+        shutil.rmtree(stage_1_checkpoints_path)
+    
+    # 2. Initial Model & Tokenizer Setup (used for both stages)
     print("--- Loading tokenizer ---")
     tokenizer = AutoTokenizer.from_pretrained(args.base_model_path)
     tokenizer.pad_token = tokenizer.eos_token
@@ -89,28 +103,12 @@ def main():
             "hallucination_up_proj",
             "hallucination_down_proj",
             "hallucination_detector",
-            "new_token_embeddings",
+            "hallucination_norm",
         ],
     )
 
-    # Pass custom hyperparameters to the model config
     model_config = AutoConfig.from_pretrained(args.base_model_path)
-    model_config.alpha_boost = 5.0
-    model_config.tau = 0.7
-    model_config.max_boost = 8.0
 
-    print("--- Loading Model with BNB Config ---")
-    model = AutoModelForCausalLM.from_pretrained(
-        args.base_model_path,
-        config=model_config,
-        quantization_config=bnb_config,
-        trust_remote_code=True,
-    )
-
-    print("--- Prepare model for kbit training ---")
-    model = prepare_model_for_kbit_training(model)
-
-    # 3. Configure PEFT/LoRA
     print("--- Configuring PEFT ---")
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
@@ -118,50 +116,128 @@ def main():
         lora_alpha=args.lora_alpha,
         lora_dropout=args.lora_dropout,
         bias="none",
-        # Apply LoRA to the standard transformer blocks for memory efficiency.
-        target_modules=[
-            "q_proj", 
-            "k_proj", 
-            "v_proj", 
-            "o_proj",
-            "embed_tokens",
-            "lm_head",
-        ],
-        # Fully fine-tune the custom detector.
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
         modules_to_save=[
             "hallucination_gate_proj",
             "hallucination_up_proj",
             "hallucination_down_proj",
             "hallucination_detector",
-            "new_token_embeddings"
+            "hallucination_norm",
         ],
     )
-    
-    print("--- Applying PEFT ---")
-    peft_model = get_peft_model(model, peft_config)
-    peft_model.print_trainable_parameters()
 
-    # 4. Load Datasets from SageMaker's input channels
-    print("--- Loading dataset ---")
-    dataset = datasets.load_from_disk(args.dataset_path)
-    print(dataset)
-    train_dataset, eval_dataset = dataset["train"], dataset["test"]
+    # 3. --- STAGE 1: DETECTOR TRAINING ---
+    print("--- Loading Model for Stage 1 ---")
+    model_s1 = AutoModelForCausalLM.from_pretrained(
+        args.base_model_path,
+        config=model_config,
+        quantization_config=bnb_config,
+        trust_remote_code=True,
+    )
+    model_s1 = prepare_model_for_kbit_training(model_s1)
+    peft_model_s1 = get_peft_model(model_s1, peft_config)
+    peft_model_s1.print_trainable_parameters()
 
-    # 5. Set up Trainer
-    print("--- Setting up Trainer ---")
-    training_args = TrainingArguments(
-        output_dir=args.model_dir,
-        num_train_epochs=args.epochs,
+    print("--- Loading Stage 1 dataset ---")
+    dataset_s1_path = os.path.join(args.dataset_path, "training_data_stage_1")
+    print(f"Loading dataset from: {dataset_s1_path}")
+    dataset_s1 = datasets.load_from_disk(dataset_s1_path)
+    train_dataset_s1, eval_dataset_s1 = dataset_s1["train"], dataset_s1["test"]
+
+    training_args_s1 = TrainingArguments(
+        output_dir=stage_1_checkpoints_path,
+        num_train_epochs=args.epochs_s1,
+        learning_rate=args.learning_rate_s1,
         per_device_train_batch_size=args.train_batch_size,
         per_device_eval_batch_size=args.eval_batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         optim=args.optim,
-        learning_rate=args.learning_rate,
         weight_decay=args.weight_decay,
         lr_scheduler_type=args.lr_scheduler_type,
         warmup_ratio=args.warmup_ratio,
         bf16=True,
-        logging_dir=f"{args.output_data_dir}/logs",
+        logging_dir=f"{args.output_data_dir}/logs/s1",
+        logging_strategy="steps",
+        logging_steps=args.logging_steps,
+        evaluation_strategy="steps",
+        eval_steps=args.eval_steps,
+        save_strategy="steps",
+        save_steps=args.save_steps,
+        save_total_limit=2,
+        report_to="wandb",
+        run_name="self-correction-s1-detector",
+        gradient_checkpointing=True,
+        gradient_checkpointing_kwargs={"use_reentrant": False},
+        label_names=["labels", "hallucination_labels"],
+        max_grad_norm=args.max_grad_norm,
+    )
+
+    trainer_s1 = SelfCorrectionTrainer(
+        model=peft_model_s1,
+        args=training_args_s1,
+        train_dataset=train_dataset_s1,
+        eval_dataset=eval_dataset_s1,
+        tokenizer=tokenizer,
+        data_collator=SelfCorrectionDataCollator(tokenizer=tokenizer),
+        alpha=0.0, # Alpha=0 trains detector only
+        correction_weights=correction_weights,
+    )
+
+    print("--- Starting Stage 1 Training ---")
+    trainer_s1.train()
+    print("--- Stage 1 Finished. Saving final model. ---")
+    trainer_s1.save_model(stage_1_checkpoint_dir)
+
+    # 4. --- MEMORY CLEANUP ---
+    print("--- Cleaning up memory between stages ---")
+    del trainer_s1, model_s1, peft_model_s1
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    # --- Pre-run Cleanup for Stage 2 ---
+    # Clean up the main model directory to ensure Stage 2 starts fresh.
+    # This prevents old checkpoints from interfering with the new ones.
+    if os.path.exists(args.model_dir):
+        print(f"--- Removing existing Stage 2 checkpoints from {args.model_dir} ---")
+        # Be careful not to delete the stage_1_final checkpoint
+        for item in os.listdir(args.model_dir):
+            item_path = os.path.join(args.model_dir, item)
+            if os.path.isdir(item_path) and item != "stage_1_final":
+                shutil.rmtree(item_path)
+            elif os.path.isfile(item_path):
+                os.remove(item_path)
+
+
+    # 5. --- STAGE 2: JOINT TRAINING ---
+    print(f"--- Loading model from Stage 1 checkpoint: {stage_1_checkpoint_dir} ---")
+    model_s2 = AutoModelForCausalLM.from_pretrained(
+        stage_1_checkpoint_dir,
+        config=model_config,
+        quantization_config=bnb_config,
+        trust_remote_code=True,
+    )
+    # FIX: The model must be prepared for k-bit training again after being loaded.
+    model_s2 = prepare_model_for_kbit_training(model_s2)
+    
+    print("--- Loading Stage 2 dataset ---")
+    dataset_s2_path = os.path.join(args.dataset_path, "training_data_stage_2")
+    print(f"Loading dataset from: {dataset_s2_path}")
+    dataset_s2 = datasets.load_from_disk(dataset_s2_path)
+    train_dataset_s2, eval_dataset_s2 = dataset_s2["train"], dataset_s2["test"]
+
+    training_args_s2 = TrainingArguments(
+        output_dir=args.model_dir, # Stage 2 saves to the main model directory
+        num_train_epochs=args.epochs_s2,
+        learning_rate=args.learning_rate_s2,
+        per_device_train_batch_size=args.train_batch_size,
+        per_device_eval_batch_size=args.eval_batch_size,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        optim=args.optim,
+        weight_decay=args.weight_decay,
+        lr_scheduler_type=args.lr_scheduler_type,
+        warmup_ratio=args.warmup_ratio,
+        bf16=True,
+        logging_dir=f"{args.output_data_dir}/logs/s2",
         logging_strategy="steps",
         logging_steps=args.logging_steps,
         evaluation_strategy="steps",
@@ -170,34 +246,29 @@ def main():
         save_steps=args.save_steps,
         save_total_limit=3,
         report_to="wandb",
+        run_name="self-correction-s2-joint",
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         label_names=["labels", "hallucination_labels"],
         max_grad_norm=args.max_grad_norm,
     )
 
-    data_collator = SelfCorrectionDataCollator(tokenizer=tokenizer)
-
-    trainer = SelfCorrectionTrainer(
-        model=peft_model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
+    trainer_s2 = SelfCorrectionTrainer(
+        model=model_s2,
+        args=training_args_s2,
+        train_dataset=train_dataset_s2,
+        eval_dataset=eval_dataset_s2,
         tokenizer=tokenizer,
-        data_collator=data_collator,
-        alpha=args.alpha,
+        data_collator=SelfCorrectionDataCollator(tokenizer=tokenizer),
+        alpha=args.alpha_s2, # Alpha > 0 trains both LoRA and detector
         correction_weights=correction_weights,
-        custom_head_learning_rate=args.custom_head_learning_rate,
     )
 
-    # 6. Start Training
-    print("--- Starting training ---")
-    trainer.train()
-
-    # 7. Save the final model
-    print("--- Saving final model ---")
-    # The Trainer automatically saves checkpoints. This is an explicit final save.
-    trainer.save_model(args.model_dir)
+    print("--- Starting Stage 2 Training ---")
+    trainer_s2.train()
+    
+    print("--- Two-stage training finished. Saving final model. ---")
+    trainer_s2.save_model(args.model_dir)
 
 if __name__ == "__main__":
     main()

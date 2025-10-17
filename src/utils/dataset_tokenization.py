@@ -107,6 +107,35 @@ def mask_token_labels(
     item["labels"] = labels
     return item
 
+def replace_deletion_tokens(
+    item: dict,
+    prompt_token_len: int,
+    del_s_token_id: int,
+    del_a_token_id: int,
+    del_s_replacement: list[int],
+    del_a_replacement: list[int],
+):
+    i = prompt_token_len
+
+    del_s_mask = [-100] * len(del_s_replacement)
+    del_a_mask = [-100] * len(del_a_replacement)
+
+    while i < len(item["labels"]):
+        if item["input_ids"][i] == del_s_token_id:
+            item["input_ids"] = item["input_ids"][:i] + del_s_replacement + item["input_ids"][i+1:]
+            item["labels"] = item["labels"][:i] + del_s_mask + item["labels"][i+1:]
+            item["hallucination_labels"] = item["hallucination_labels"][:i] + [1] + del_s_mask[1:] + item["hallucination_labels"][i+1:]
+            i += len(del_s_replacement)
+        elif item["input_ids"][i] == del_a_token_id:
+            item["input_ids"] = item["input_ids"][:i] + del_a_replacement + item["input_ids"][i+1:]
+            item["labels"] = item["labels"][:i] + del_a_mask + item["labels"][i+1:]
+            item["hallucination_labels"] = item["hallucination_labels"][:i] + [2] + del_a_mask[1:] + item["hallucination_labels"][i+1:]
+            i += len(del_a_replacement)
+        else:
+            i += 1
+        
+    return item
+
 
 def process_data(
     item: dict, 
@@ -115,6 +144,9 @@ def process_data(
     insertion_marker: str,
     del_s_token_id: int,
     del_a_token_id: int,
+    del_s_replacement: list[int],
+    del_a_replacement: list[int],
+    mask_labels: bool = False,
 ) -> dict:
     """
     Processes a single data sample to prepare it for self-correction model training.
@@ -294,5 +326,12 @@ def process_data(
     model_inputs = mask_token_labels(
         model_inputs, prompt_token_len, del_s_token_id, del_a_token_id
     )
+
+    model_inputs = replace_deletion_tokens(
+        model_inputs, prompt_token_len, del_s_token_id, del_a_token_id, del_s_replacement, del_a_replacement
+    )
+
+    if mask_labels:
+        model_inputs["labels"] = [-100] * len(model_inputs["labels"])
 
     return model_inputs
