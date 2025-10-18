@@ -13,9 +13,10 @@ from transformers import (
     BitsAndBytesConfig,
     AutoConfig,
 )
-from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
+from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training, PeftModel
 import datasets
 from transformers.trainer_utils import get_last_checkpoint
+import wandb
 
 from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 
@@ -30,6 +31,8 @@ def main():
         local_rank = int(os.environ["LOCAL_RANK"])
         if torch.cuda.is_available():
             torch.cuda.set_device(local_rank)
+    else:
+        local_rank = 0 # Default to 0 if not in a distributed environment
             
     # 1. Parse Arguments
     parser = argparse.ArgumentParser(description="Two-stage training script for the Self-Corrective LLaMA model.")
@@ -45,11 +48,11 @@ def main():
     parser.add_argument("--base_model_path", type=str, default="/opt/ml/input/data/model")
 
     # --- Stage 1 Hyperparameters (Detector Training) ---
-    parser.add_argument("--epochs_s1", type=int, default=1, help="Number of epochs for Stage 1.")
+    parser.add_argument("--epochs_s1", type=float, default=1, help="Number of epochs for Stage 1.")
     parser.add_argument("--learning_rate_s1", type=float, default=2e-4, help="Learning rate for Stage 1.")
     
     # --- Stage 2 Hyperparameters (Joint Training) ---
-    parser.add_argument("--epochs_s2", type=int, default=2, help="Number of epochs for Stage 2.")
+    parser.add_argument("--epochs_s2", type=float, default=2, help="Number of epochs for Stage 2.")
     parser.add_argument("--learning_rate_s2", type=float, default=2e-5, help="Learning rate for Stage 2.")
     parser.add_argument("--alpha_s2", type=float, default=0.3, help="Alpha for Stage 2 (balances token and hallucination loss).")
 
@@ -57,7 +60,8 @@ def main():
     parser.add_argument("--train_batch_size", type=int, default=2)
     parser.add_argument("--eval_batch_size", type=int, default=2)
     parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0, 6.0]', help='JSON string for a 3-element list for [no-op, del-s, del-a] weights.')
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
+    parser.add_argument("--gradient_accumulation_steps_s1", type=int, default=8, help="Gradient accumulation steps for Stage 1.")
+    parser.add_argument("--gradient_accumulation_steps_s2", type=int, default=4, help="Gradient accumulation steps for Stage 2.")
     parser.add_argument("--optim", type=str, default="paged_adamw_8bit")
     parser.add_argument("--weight_decay", type=float, default=0.01)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
@@ -75,16 +79,9 @@ def main():
     args, _ = parser.parse_known_args()
     correction_weights = json.loads(args.correction_weights)
     
-    # Define a dedicated directory for the Stage 1 final checkpoint
-    stage_1_checkpoint_dir = os.path.join(args.model_dir, "stage_1_final")
-    stage_1_checkpoints_path = os.path.join(args.model_dir, "s1_checkpoints")
+    # Define a dedicated directory for the Stage 1 checkpoints
+    stage_1_checkpoints_path = os.path.join(args.output_data_dir, "s1_checkpoints")
 
-    # --- Pre-run Cleanup ---
-    # Clean up the Stage 1 checkpoint directory to ensure a fresh start.
-    if os.path.exists(stage_1_checkpoints_path):
-        print(f"--- Removing existing Stage 1 checkpoints from {stage_1_checkpoints_path} ---")
-        shutil.rmtree(stage_1_checkpoints_path)
-    
     # 2. Initial Model & Tokenizer Setup (used for both stages)
     print("--- Loading tokenizer ---")
     tokenizer = AutoTokenizer.from_pretrained(args.base_model_path)
@@ -105,7 +102,6 @@ def main():
             "hallucination_down_proj",
             "hallucination_norm",
             "hallucination_detector",
-            "hallucination_norm",
         ],
     )
 
@@ -152,7 +148,7 @@ def main():
         learning_rate=args.learning_rate_s1,
         per_device_train_batch_size=args.train_batch_size,
         per_device_eval_batch_size=args.eval_batch_size,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        gradient_accumulation_steps=args.gradient_accumulation_steps_s1,
         optim=args.optim,
         weight_decay=args.weight_decay,
         lr_scheduler_type=args.lr_scheduler_type,
@@ -187,8 +183,20 @@ def main():
 
     print("--- Starting Stage 1 Training ---")
     trainer_s1.train()
-    print("--- Stage 1 Finished. Saving final model. ---")
-    trainer_s1.save_model(stage_1_checkpoint_dir)
+    print("--- Stage 1 Finished. ---")
+
+    # --- End the W&B run for Stage 1 ---
+    # This ensures that Stage 2 starts a new, separate run.
+    if "wandb" in training_args_s1.report_to and local_rank == 0:
+        print("--- Finishing Stage 1 W&B run ---")
+        wandb.finish()
+
+    # --- Post-Stage 1 Setup ---
+    # Find the last checkpoint from the Stage 1 training run.
+    last_checkpoint_s1 = get_last_checkpoint(stage_1_checkpoints_path)
+    if last_checkpoint_s1 is None:
+        raise ValueError("Could not find a valid checkpoint after Stage 1 training.")
+    print(f"--- Found latest Stage 1 checkpoint at: {last_checkpoint_s1} ---")
 
     # 4. --- MEMORY CLEANUP ---
     print("--- Cleaning up memory between stages ---")
@@ -196,30 +204,21 @@ def main():
     gc.collect()
     torch.cuda.empty_cache()
 
-    # --- Pre-run Cleanup for Stage 2 ---
-    # Clean up the main model directory to ensure Stage 2 starts fresh.
-    # This prevents old checkpoints from interfering with the new ones.
-    if os.path.exists(args.model_dir):
-        print(f"--- Removing existing Stage 2 checkpoints from {args.model_dir} ---")
-        # Be careful not to delete the stage_1_final checkpoint
-        for item in os.listdir(args.model_dir):
-            item_path = os.path.join(args.model_dir, item)
-            if os.path.isdir(item_path) and item != "stage_1_final":
-                shutil.rmtree(item_path)
-            elif os.path.isfile(item_path):
-                os.remove(item_path)
-
-
     # 5. --- STAGE 2: JOINT TRAINING ---
-    print(f"--- Loading model from Stage 1 checkpoint: {stage_1_checkpoint_dir} ---")
-    model_s2 = AutoModelForCausalLM.from_pretrained(
-        stage_1_checkpoint_dir,
+    print("--- Loading base model for Stage 2 ---")
+    # We must reload the base model from scratch to ensure a clean state.
+    model_s2_base = AutoModelForCausalLM.from_pretrained(
+        args.base_model_path,
         config=model_config,
         quantization_config=bnb_config,
         trust_remote_code=True,
     )
-    # The model must be prepared for k-bit training again after being loaded.
-    model_s2 = prepare_model_for_kbit_training(model_s2)
+    model_s2_base = prepare_model_for_kbit_training(model_s2_base)
+
+    print(f"--- Loading and applying adapter from Stage 1 checkpoint: {last_checkpoint_s1} ---")
+    # Load the PEFT model from the Stage 1 checkpoint and crucially, make it trainable.
+    model_s2 = PeftModel.from_pretrained(model_s2_base, last_checkpoint_s1, is_trainable=True)
+    model_s2.print_trainable_parameters()
     
     print("--- Loading Stage 2 dataset ---")
     dataset_s2_path = os.path.join(args.dataset_path, "training_data_stage_2")
@@ -233,7 +232,7 @@ def main():
         learning_rate=args.learning_rate_s2,
         per_device_train_batch_size=args.train_batch_size,
         per_device_eval_batch_size=args.eval_batch_size,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        gradient_accumulation_steps=args.gradient_accumulation_steps_s2,
         optim=args.optim,
         weight_decay=args.weight_decay,
         lr_scheduler_type=args.lr_scheduler_type,
@@ -242,10 +241,8 @@ def main():
         logging_dir=f"{args.output_data_dir}/logs/s2",
         logging_strategy="steps",
         logging_steps=args.logging_steps,
-        evaluation_strategy="steps",
-        eval_steps=args.eval_steps,
-        save_strategy="steps",
-        save_steps=args.save_steps,
+        evaluation_strategy="epoch",
+        save_strategy="epoch",
         save_total_limit=3,
         report_to="wandb",
         run_name="self-correction-s2-joint",
