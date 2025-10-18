@@ -83,19 +83,7 @@ class SelfCorrectionTrainer(Trainer):
         token_logits = outputs.get("logits")
         hallucination_logits = outputs.get("hallucination_logits")
     
-        # --- 1. Calculate Token Prediction Loss (Cross-Entropy) ---
-        loss_fct_token = nn.CrossEntropyLoss(ignore_index=-100)
-        
-        shift_logits = token_logits[..., :-1, :].contiguous()
-        shift_labels = token_labels[..., 1:].contiguous()
-        
-        vocab_size = token_logits.shape[-1]
-        shift_logits = shift_logits.view(-1, vocab_size)
-        shift_labels = shift_labels.view(-1).to(shift_logits.device)
-        
-        token_loss = loss_fct_token(shift_logits, shift_labels)
-
-        # --- 2. Calculate Hallucination Detection Loss (Cross-Entropy) ---
+        # --- Calculate Hallucination Loss (always needed for logging) ---
         weight_tensor = self.correction_weight_tensor.to(hallucination_logits.device) if self.correction_weight_tensor is not None else None
         loss_fct_hallucination = nn.CrossEntropyLoss(weight=weight_tensor, ignore_index=-100)
         
@@ -107,7 +95,21 @@ class SelfCorrectionTrainer(Trainer):
         shift_hallucination_labels = shift_hallucination_labels.view(-1).to(shift_hallucination_logits.device)
         
         hallucination_loss = loss_fct_hallucination(shift_hallucination_logits, shift_hallucination_labels)
-        
+
+        # --- Calculate Token Loss (only when needed) ---
+        # We compute it during Stage 2 (alpha > 0).
+        if self.alpha > 0.0:
+            loss_fct_token = nn.CrossEntropyLoss(ignore_index=-100)
+            shift_logits = token_logits[..., :-1, :].contiguous()
+            shift_labels = token_labels[..., 1:].contiguous()
+            vocab_size = token_logits.shape[-1]
+            shift_logits = shift_logits.view(-1, vocab_size)
+            shift_labels = shift_labels.view(-1).to(shift_logits.device)
+            token_loss = loss_fct_token(shift_logits, shift_labels)
+        else:
+            # In Stage 1 training, token_loss is not used for backprop.
+            token_loss = torch.tensor(0.0).to(hallucination_logits.device)
+
         # --- 3. Combine the losses with your alpha weighting ---
         custom_loss = self.alpha * token_loss + (1 - self.alpha) * hallucination_loss
 
