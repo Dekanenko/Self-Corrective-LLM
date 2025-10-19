@@ -13,7 +13,7 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
     def __init__(self, config):
         super().__init__(config)
         
-        self.lookup_length = getattr(config, "lookup_length", 30)
+        self.correction_cooldown = getattr(config, "correction_cooldown", 30)
         self.num_new_tokens = 2
         self.deletion_threshold = config.deletion_threshold if "deletion_threshold" in config else 0.7
 
@@ -123,6 +123,10 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
         generated_ids = input_ids
         attention_mask = torch.ones_like(input_ids)
         
+        # Initialize a counter to track tokens since the last correction.
+        # Start it at the cooldown value to allow immediate correction if needed.
+        tokens_since_correction = self.correction_cooldown
+        
         # The first forward pass processes the prompt and gets the initial KV cache.
         outputs = self(
             input_ids=input_ids,
@@ -142,11 +146,16 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
             # Apply softmax to get hallucination probabilities.
             hallucination_probs = F.softmax(hallucination_logits, dim=-1)
 
-            # Conditionally choose the next tokens based on the detector's output.
-            if hallucination_probs[0, 1] > self.deletion_threshold:
+            # Check if the cooldown period has passed.
+            can_correct = tokens_since_correction >= self.correction_cooldown
+
+            # Conditionally choose the next tokens based on the detector's output and the cooldown.
+            if can_correct and hallucination_probs[0, 1] > self.deletion_threshold:
                 current_tokens = self.rewrite_sentence_ids
-            elif hallucination_probs[0, 2] > self.deletion_threshold:
+                tokens_since_correction = 0 # Reset the counter
+            elif can_correct and hallucination_probs[0, 2] > self.deletion_threshold:
                 current_tokens = self.rewrite_response_ids
+                tokens_since_correction = 0 # Reset the counter
             else:
                 if temperature > 0.0:
                     scaled_logits = next_token_logits / temperature
@@ -154,6 +163,9 @@ class SelfCorrectiveLlama(LlamaForCausalLM):
                     current_tokens = torch.multinomial(probs, num_samples=1)
                 else:
                     current_tokens = torch.argmax(next_token_logits, dim=-1).unsqueeze(-1)
+                
+                # Increment the counter by the number of tokens just generated.
+                tokens_since_correction += current_tokens.shape[1]
             
             generated_ids = torch.cat([generated_ids, current_tokens], dim=-1)
             
