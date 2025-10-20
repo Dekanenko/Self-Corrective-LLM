@@ -101,9 +101,9 @@ class MathQACorrectionAgent:
         ])
 
         if self.apply_deletion_tags:
-            print("Before applying deletion tags:", "\n---\n".join(response_batch))
+            # print("Before applying deletion tags:", "\n---\n".join(response_batch))
             response_batch = [apply_del_tokens(res) for res in response_batch]
-            print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
+            # print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
 
         # batch inputs
         prompts = [

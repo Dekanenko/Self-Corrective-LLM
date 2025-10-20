@@ -14,6 +14,7 @@ def ensure_space_after_del_tokens(text: str) -> str:
 
 
 def apply_del_tokens(text: str) -> str:
+    text = text.replace("[rewrite response]", "<DEL_A>").replace("[rewrite sentence]", "<DEL_S>")
     text = ensure_space_after_del_tokens(text)
     text = text.replace('\n\n', '\n').replace('\n', ' \n ')
     words = text.split(' ')
