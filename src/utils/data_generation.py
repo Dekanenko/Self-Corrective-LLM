@@ -153,6 +153,79 @@ async def _generate_responses_for_chunk_api(
     return responses
 
 
+async def generate_responses_tuned_model(
+    llm,
+    tokenizer,
+    prompt_class: StringPromptTemplate,
+    dataset: list[dict], # This represents a single chunk of data
+    response_dict_format: dict,
+    data_processing_function: Callable | None = None,
+    prompt_repetitions: int = 1,
+    temperature: int = 0.3,
+    max_new_tokens: int = 512,
+) -> list[dict]:
+    """
+    Generates responses for a single chunk of data, handling both local and remote models.
+    """
+    if not data_processing_function:
+        raise ValueError("'data_processing_function' must be provided.")
+    
+    model_input, additional_info = data_processing_function(dataset)
+
+    def process_item(i: int, item_input: dict) -> dict | None:
+        """Safely process one item by making concurrent requests for each repetition."""
+        prompt = prompt_class(input_variables=list(item_input.keys()))
+        prompt_string = prompt.format(**item_input)
+
+        try:
+            results = []
+            for i in range(prompt_repetitions):
+                inputs = tokenizer(prompt_string, return_tensors="pt").to(llm.device)
+                generated_ids = llm.generate(
+                    **inputs, temperature=temperature, 
+                    max_new_tokens=max_new_tokens, do_sample=True, 
+                    tokenizer=tokenizer
+                )
+
+                res = tokenizer.decode(generated_ids[0], skip_special_tokens=False)
+                results.append(res.replace("<|eot_id|>", ""))
+
+            successful_responses = []
+            for res in results:
+                if isinstance(res, Exception):
+                    logger.error(f"Error in one of the repetitions for item {i}: {res}")
+                else:
+                    successful_responses.append(res.strip())
+
+            if not successful_responses:
+                return None
+
+            response_dict = {
+                **response_dict_format,
+                "input": prompt_string,
+                "response": successful_responses,
+                "additional_info": response_dict_format.get("additional_info", {}).copy(),
+            }
+
+            if additional_info and i < len(additional_info) and additional_info[i]:
+                response_dict["additional_info"].update(additional_info[i])
+
+            return response_dict
+        except Exception as e:
+            logger.error(f"Error processing item {i} in chunk: {e}")
+            return None
+
+    responses = []
+    for i in range(len(model_input)):
+        # Process one item at a time, sequentially.
+        # The concurrency for prompt_repetitions is handled inside process_item.
+        result = process_item(i, model_input[i])
+        if result:
+            responses.append(result)
+
+    return responses
+
+
 async def _process_data_chunk(
     agent,
     data_chunk: list[dict],
