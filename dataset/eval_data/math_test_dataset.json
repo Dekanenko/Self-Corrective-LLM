@@ -1,0 +1,170 @@
+[
+    {
+        "question": "When Michelle makes fresh pasta, she first makes the dough, then she rolls it out and cuts it, and then she hangs it on racks to dry for cooking later. She needs a drying rack for each three pounds of pasta she makes, and it takes two cups of flour to make each pound of pasta dough. How many more drying racks will Michelle need if she makes pasta using three 8-cup bags of flour?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Ember is half as old as Nate who is 14.  When she is 14 herself, how old will Nate be?",
+        "answer": [
+            21.0
+        ],
+        "answerable": true,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Paul had at least 1000 books. After selling some in a garage sale .How many books did he sell?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "SVAMP"
+    },
+    {
+        "question": "Edward spent $ 16 to buy books and $ 8 to buy pens. Now he has $ 19..How much more did Edward spend on books than pens?",
+        "answer": [
+            8.0
+        ],
+        "answerable": true,
+        "source": "SVAMP"
+    },
+    {
+        "question": "There are 12 bananas and 4 apples in the blue basket. The red basket holds half as many fruits as the blue basket. How many fruits are in the red basket?",
+        "answer": [
+            8.0
+        ],
+        "answerable": true,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Rachel had to complete 8 pages of math homework. If she had to complete 3 more pages of math homework than reading homework.How many pages did she have to complete in all?",
+        "answer": [
+            13.0
+        ],
+        "answerable": true,
+        "source": "SVAMP"
+    },
+    {
+        "question": "The electricity price in Coco's town is $0.10 per kW. Coco's new oven has a consumption rate of 2.4 kWh (kilowatt-hours). How much will Coco pay for using his oven only if he used it for a total of 25 hours last month?",
+        "answer": [
+            6.0
+        ],
+        "answerable": true,
+        "source": "GSM8K"
+    },
+    {
+        "question": "There were 30 women and 20 men who attended the party. After few hours, 2/5 of the total number of people left. If 9 men left the party, how many more women stayed at the party than men?",
+        "answer": [
+            8.0
+        ],
+        "answerable": true,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Cassie is an athletic person and tries to drink at least 12 cups of water a day to stay hydrated while being active. Her water bottle holds 16 ounces. How many times does Cassie have to refill her water bottle a day to make sure she drinks 12 cups?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "GSM8K"
+    },
+    {
+        "question": "If John travels 0 miles on a bike ride, and Jill travels 5 miles less, how many miles does Jim travel if he travels only 20% as far as Jill?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Every day Ryan spends 7 hours on learning english, 2 hours on learning Chinese and 4 hours on learning Spanish. How many more hours does he spend on learning english than he does on learning Japanese?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "SVAMP"
+    },
+    {
+        "question": "The school is planning a field trip. The school has 21 classrooms. There are 98 students in the school and more than 7 school buses. If some buses are full.How many seats are in each bus?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "SVAMP"
+    },
+    {
+        "question": "Mason is a caterer packing up silverware and plates for a big corporate event. Each piece of silverware weighs less than 4 ounces, and there are three pieces of silverware per setting. Each plate weighs 12 to 20 ounces each differently, and there are two plates per setting. If Mason needs enough settings for 15 tables with 8 settings each, plus 20 backup settings in case of breakage, how many ounces will all the settings weigh?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Clayton plays basketball on a team. In the first game, he scored 10 points. In the second game, he scored 14 points. In the third game, he scored some points. In the fourth game, he scored the average of his points from the first four games.  How many total points did Clayton score during the first four games?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Carol was sending out birthday invitations to her friends. If each package of invitations she bought had 9 invitations in it and she bought 5 packs,.how many friends can she invite?",
+        "answer": [
+            45.0
+        ],
+        "answerable": true,
+        "source": "ASDiv"
+    },
+    {
+        "question": "Lucca has 100 balls and 10 percent of his balls are basketballs. Lucien has 200 balls and 20 percent of them are basketballs. In total how many basketballs do Lucca and Lucien have?",
+        "answer": [
+            50.0
+        ],
+        "answerable": true,
+        "source": "GSM8K"
+    },
+    {
+        "question": "A magician was selling magic card decks for 5 dollars each. If he started with 14 decks and by the end of the day he had less than 5 left, how much money did he earn? ",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "MultiArith"
+    },
+    {
+        "question": "A bag of dozen apples costs $14 and Brian has already spent $10 on kiwis and half that much on bananas. What's the maximum number of apples Brian can buy if he left his house with only $50 and needs to pay the $3.50 subway fare each way?",
+        "answer": [
+            24.0
+        ],
+        "answerable": true,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Martha gets prize points every time she shops at her local grocery store. She gets 50 points per $10 spent, plus a 250 point bonus if she spends more than $100. Martha buys several pounds of beef for $11 each, less than 8 pounds of fruits and vegetables for $4/pound, 3 jars of spices for $6 each, and other groceries totaling $37. How many points does Martha get?",
+        "answer": [
+            0.0
+        ],
+        "answerable": false,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Aria has twice as many high school credits as Emily, who has twice the number of high school credits as Spencer. If Emily has 20 credits, what's twice the total number of high school credits the three have?",
+        "answer": [
+            140.0
+        ],
+        "answerable": true,
+        "source": "GSM8K"
+    },
+    {
+        "question": "Lizzie has half as many crayons as Bobbie. Bobbie has three times as many crayons as Billie. If Billie has 18 crayons, how many crayons does Lizzie have?",
+        "answer": [
+            27.0
+        ],
+        "answerable": true,
+        "source": "GSM8K"
+    }
+]
