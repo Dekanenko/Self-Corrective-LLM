@@ -190,6 +190,55 @@ class ContextQAErrorCheckPrompt(StringPromptTemplate):
 
         return prompt
 
+class ContextQAEvalErrorCheckPrompt(StringPromptTemplate):
+
+    TEMPLATE: str = (
+        "You are a meticulous and objective AI judge. Your sole purpose is to evaluate the factual and semantic correctness of a given `Response to Evaluate` against a `Context` and a list of `Correct Answers`.\n\n"
+        "You are to ignore stylistic differences, tone, or any superfluous yet correct information. Your judgment must be based purely on whether the core answer is semantically equivalent to one of the correct answers and factually supported by the context.\n\n"
+
+        "# Inputs\n"
+        "**Question**: {question}\n"
+        "**Context**: '''{context}'''\n"
+        "**Correct Answers (any will do)**: {correct_answer}\n"
+        "**Response to Evaluate**: {response}\n\n"
+
+        "# Core Evaluation Principles\n"
+        "1. **Semantic Equivalence**: The `Response to Evaluate` is considered correct if its essential meaning aligns with at least one of the `Correct Answers`. The exact phrasing does not matter.\n"
+        "2. **Factual Consistency**: All information presented in the `Response to Evaluate` must be consistent with the provided `Context`. Any contradiction is an error.\n"
+        "3. **Sufficiency**: The response must correctly address the question posed. Extraneous, but accurate, information is permissible and should not be flagged as an error.\n\n"
+
+        "# Step-by-Step Analysis Guide (Your Internal Thought Process)\n"
+        "1.  **Deconstruct**: First, understand the core requirement of the `Question`.\n"
+        "2.  **Compare**: Check if the `Response to Evaluate` is semantically equivalent to any of the provided `Correct Answers`.\n"
+        "3.  **Verify**: Scrutinize the `Response to Evaluate` for any claims that contradict the `Context`.\n"
+        "4.  **Conclude**: If the response is semantically equivalent to a correct answer AND has no factual inconsistencies with the context, it is correct. Otherwise, it is incorrect.\n\n"
+
+        "# Output Requirements\n"
+        "1. You MUST produce a list of structured errors. Each error must be unique.\n"
+        "2. If the response is completely correct and contains no substantive errors, you MUST return an empty list: `[]`.\n"
+        "3. Your entire response MUST be ONLY the list of structured errors, without any headers, comments, or other text.\n\n"
+
+        "# Format Instructions:\n"
+        "{format_instructions}\n\n"
+
+        "List of Errors:"
+    )
+
+    def format(
+            self,
+            question: str,
+            context: str,
+            answer: str,
+            response: str,
+            format_instructions: str,
+    ) -> str:
+        prompt = self.TEMPLATE.format(
+            question=question, context=context, correct_answer=answer, response=response, format_instructions=format_instructions)
+        
+        # print(prompt)
+
+        return prompt
+
 
 class ContextQAErrorCorrectionPrompt(StringPromptTemplate):
 
@@ -1154,6 +1203,58 @@ class MathQAErrorCorrectionPrompt(StringPromptTemplate):
             # errors=format_errors(errors),
             errors=errors,
         )
+    
+        # print(prompt)
+        
+        return prompt
+    
+
+class MathQAEvalErrorCheckPrompt(StringPromptTemplate):
+
+    TEMPLATE: str = (
+        "You are a highly precise and logical evaluator of AI-generated responses. Your single objective is to determine if the final conclusion of a response is correct, without considering the steps taken to reach it."
+
+        "# Task\n"
+        "Evaluate the 'Response to Evaluate' against the 'Correct Answer'. Your evaluation must be based exclusively on the final conclusion.\n\n"
+
+        "# Inputs\n"
+        "**Question**: {question}\n"
+        "**Correct Answer**: {correct_answer}\n"
+        "**Response to Evaluate**: {response}\n\n"
+
+        "# Core Evaluation Principles\n"
+        "1. **Final Conclusion is Everything**: Your evaluation must be based SOLELY on the final conclusion of the 'Response to Evaluate'. It is correct if it is semantically equivalent to the 'Correct Answer'.\n"
+        "2. **Ignore Intermediate Reasoning**: The path to an answer, including any exploratory text, partial calculations, or assumptions, is completely irrelevant. Disregard it entirely.\n"
+        "3. **Semantic Equivalence**: Do not perform literal string matching. 'The result is 50' is the same as '50'. 'I cannot answer this' is the same as concluding a question is unanswerable.\n\n"
+        
+        "# Handling Unanswerable Questions\n"
+        "1. The 'Response to Evaluate' is correct if it meets one of the following criteria:\n"
+        "- The response is empty '', 'None', or '0'.\n"
+        "- The final conclusion states that there is no answer, that it is impossible to answer the question, or makes a similar statement about the question being unanswerable.\n"
+        "Note: Any attempt to solve the question in the reasoning must be ignored. Base your evaluation solely on the final conclusion.\n"
+        "2. The 'Response to Evaluate' is incorrect if it provides a specific numerical answer other than '0' or otherwise fails to conclude that the question is unanswerable.\n\n"
+
+        "# Output Requirements\n"
+        "1. **JSON Output Only**: Produce a list of structured error objects.\n"
+        "2. **Empty List for Correct Responses**: If the final conclusion is correct, you MUST return an empty list: `[]`.\n"
+        "3. **No Extra Text**: Do NOT include headers, comments, or any other text outside of the JSON output.\n"
+        "4. **Strict Formatting**: Adhere strictly to the format provided:\n"
+        "{format_instructions}\n\n"
+        
+        "List of Errors:"
+    )
+
+    def format(
+            self,
+            question: str,
+            answer: str,
+            is_answerable: bool,
+            response: str,
+            format_instructions: str,
+    ) -> str:
+        correct_answer = "This question cannot be answered." if not is_answerable else answer
+        prompt = self.TEMPLATE.format(
+            question=question, correct_answer=correct_answer, response=response, format_instructions=format_instructions)
     
         # print(prompt)
         

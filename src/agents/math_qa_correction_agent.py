@@ -11,6 +11,7 @@ from src.prompts.gemini_agent_prompts import (
     MathQAErrorCheckPrompt, 
     MathQAErrorCorrectionPrompt, 
     MathQAResponseVerificationPrompt,
+    MathQAEvalErrorCheckPrompt,
 )
 from src.utils.formatting import ensure_space_after_del_tokens, apply_del_tokens
 
@@ -95,7 +96,7 @@ class MathQACorrectionAgent:
         self.error_number = 0
 
         parser = PydanticOutputParser(pydantic_object=ErrorList)
-        prompt = MathQAErrorCheckPrompt(input_variables=[
+        prompt = MathQAEvalErrorCheckPrompt(input_variables=[
             "question", "answer", "is_answerable", 
             "response", "format_instructions",
         ])

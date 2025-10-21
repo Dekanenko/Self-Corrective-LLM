@@ -2,13 +2,19 @@ from typing import TypedDict
 from pydantic import BaseModel, Field
 
 
+# class Error(BaseModel):
+#     """
+#     A model to represent an error found in a response.
+#     """
+#     description: str = Field(description="The error found in the response.")
+#     location: str = Field(description="The location of the error in the response.")
+#     correction: str = Field(description="Explanation on how to correct the error.")
+
 class Error(BaseModel):
     """
     A model to represent an error found in a response.
     """
-    description: str = Field(description="The error found in the response.")
-    location: str = Field(description="The location of the error in the response.")
-    correction: str = Field(description="Explanation on how to correct the error.")
+    description: str = Field(description="Super short and clear description of the error. Max 10 words.")
 
 
 class ErrorList(BaseModel):
