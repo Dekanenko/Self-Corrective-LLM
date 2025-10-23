@@ -1,5 +1,5 @@
 from typing import TypedDict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, conlist
 
 
 # class Error(BaseModel):
@@ -49,3 +49,33 @@ class MathQACorrectionState(TypedDict):
     errors_to_correct: list[list[str]] = Field(default=[])
     corrected_responses: list[str] = Field(default=[])
     verified_response_mask: list[bool] = Field(default=[])
+
+
+class RAPRState(TypedDict):
+    question: str = Field(default="")
+    model_response: str = Field(default="")
+    context: str = Field(default="")
+    queries: list[str] = Field(default=[])
+    evidence: list[str] = Field(default=[])
+    corrected_response: str = Field(default="")
+    input_tokens: int = Field(default=0)
+    output_tokens: int = Field(default=0)
+
+class CoVEState(TypedDict):
+    initial_question: str = Field(default="")
+    initial_response: str = Field(default="")
+    context: str = Field(default="")
+    questions: list[str] = Field(default=[])
+    answers: list[str] = Field(default=[])
+    corrected_response: str = Field(default="")
+    answer_verification_mask: list[bool] = Field(default=[])
+    input_tokens: int = Field(default=0)
+    output_tokens: int = Field(default=0)
+
+class MathAgentState(TypedDict):
+    question: str = Field(default="")
+    initial_response: str = Field(default="")
+    correction: str = Field(default="")
+    corrected_response: str = Field(default="")
+    input_tokens: int = Field(default=0)
+    output_tokens: int = Field(default=0)
