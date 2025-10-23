@@ -11,6 +11,7 @@ from src.prompts.gemini_agent_prompts import (
     MathQAErrorCheckPrompt, 
     MathQAErrorCorrectionPrompt, 
     MathQAResponseVerificationPrompt,
+    MathQAEvalErrorCheckPrompt,
 )
 from src.utils.formatting import ensure_space_after_del_tokens, apply_del_tokens
 
@@ -95,15 +96,15 @@ class MathQACorrectionAgent:
         self.error_number = 0
 
         parser = PydanticOutputParser(pydantic_object=ErrorList)
-        prompt = MathQAErrorCheckPrompt(input_variables=[
+        prompt = MathQAEvalErrorCheckPrompt(input_variables=[
             "question", "answer", "is_answerable", 
             "response", "format_instructions",
         ])
 
         if self.apply_deletion_tags:
-            print("Before applying deletion tags:", "\n---\n".join(response_batch))
+            # print("Before applying deletion tags:", "\n---\n".join(response_batch))
             response_batch = [apply_del_tokens(res) for res in response_batch]
-            print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
+            # print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
 
         # batch inputs
         prompts = [

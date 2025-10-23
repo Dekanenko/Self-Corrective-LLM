@@ -10,7 +10,8 @@ from src.models import ErrorList, ContextQACorrectionState
 from src.prompts.gemini_agent_prompts import (
     ContextQAErrorCheckPrompt, 
     ContextQAErrorCorrectionPrompt, 
-    ContextQAResponseVerificationPrompt
+    ContextQAResponseVerificationPrompt,
+    ContextQAEvalErrorCheckPrompt,
 )
 from src.utils.formatting import ensure_space_after_del_tokens, apply_del_tokens
 
@@ -94,15 +95,15 @@ class ContextQACorrectionAgent:
         response_batch = state["responses"]
 
         parser = PydanticOutputParser(pydantic_object=ErrorList)
-        prompt = ContextQAErrorCheckPrompt(input_variables=[
+        prompt = ContextQAEvalErrorCheckPrompt(input_variables=[
             "question", "context", "answer", 
             "response", "format_instructions",
         ])
 
         if self.apply_deletion_tags:
-            print("Before applying deletion tags:", "\n---\n".join(response_batch))
+            # print("Before applying deletion tags:", "\n---\n".join(response_batch))
             response_batch = [apply_del_tokens(res) for res in response_batch]
-            print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
+            # print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
 
         # batch inputs
         prompts = [
@@ -129,6 +130,8 @@ class ContextQACorrectionAgent:
                 errors.append(error_list)
                 responses.append(response_batch[i])
                 wrong_response_number += 1 if result[i].errors else 0
+            else:
+                logger.error(f"An unexpected error occurred for a prompt and it will not be retried: {result[i]}")
 
         # logger.info(f"Errors: {errors}")
         # logger.info(f"Wrong responses: {wrong_response_number}")
