@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 async def _generate_responses_for_chunk_deployed(
     model,
     prompt_class: StringPromptTemplate,
-    dataset: list[dict], # This represents a single chunk of data
+    dataset: list[dict],  # This represents a single chunk of data
     response_dict_format: dict,
     tokenizer: object | None = None,
     data_processing_function: Callable | None = None,
@@ -22,10 +22,10 @@ async def _generate_responses_for_chunk_deployed(
     Generates responses for a single chunk of data, handling both local and remote models.
     """
     responses = []
-    
+
     if not data_processing_function:
         raise ValueError("'data_processing_function' must be provided.")
-        
+
     model_input, additional_info = data_processing_function(dataset)
 
     for i in range(len(model_input)):
@@ -37,7 +37,7 @@ async def _generate_responses_for_chunk_deployed(
             if tokenizer:
                 # --- Local LLM Generation Path ---
                 inputs = tokenizer(
-                    text=prompts, 
+                    text=prompts,
                     return_tensors="pt",
                     padding=True,
                     truncation=True,
@@ -49,7 +49,10 @@ async def _generate_responses_for_chunk_deployed(
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
                 )
-                sample_responses = tokenizer.batch_decode(outputs[:, inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
+                sample_responses = tokenizer.batch_decode(
+                    outputs[:, inputs["input_ids"].shape[-1] :],
+                    skip_special_tokens=True,
+                )
             else:
                 # --- Remote LLM (SageMaker) Generation Path ---
                 parameters = {
@@ -57,14 +60,18 @@ async def _generate_responses_for_chunk_deployed(
                     "max_new_tokens": max_new_tokens,
                     "max_tokenization_length": max_length,
                 }
-                prediction_output = model.predict({
-                    "inputs": prompts,
-                    "parameters": parameters,
-                })
+                prediction_output = model.predict(
+                    {
+                        "inputs": prompts,
+                        "parameters": parameters,
+                    }
+                )
                 sample_responses = prediction_output["responses"]
 
         except Exception as e:
-            logger.error(f"Error generating response for prompt '{prompt_string[:100]}...': {e}")
+            logger.error(
+                f"Error generating response for prompt '{prompt_string[:100]}...': {e}"
+            )
             continue
 
         response_dict = {
@@ -78,14 +85,14 @@ async def _generate_responses_for_chunk_deployed(
             response_dict["additional_info"].update(additional_info[i])
 
         responses.append(response_dict)
-    
+
     return responses
 
 
 async def _generate_responses_for_chunk_api(
     llm,
     prompt_class: StringPromptTemplate,
-    dataset: list[dict], # This represents a single chunk of data
+    dataset: list[dict],  # This represents a single chunk of data
     response_dict_format: dict,
     data_processing_function: Callable | None = None,
     prompt_repetitions: int = 1,
@@ -96,10 +103,10 @@ async def _generate_responses_for_chunk_api(
     """
     if not data_processing_function:
         raise ValueError("'data_processing_function' must be provided.")
-    
+
     if not semaphore:
         raise ValueError("'semaphore' must be provided.")
-        
+
     model_input, additional_info = data_processing_function(dataset)
     chain = llm | StrOutputParser()
 
@@ -113,10 +120,10 @@ async def _generate_responses_for_chunk_api(
                 return await chain.ainvoke(p_string, config={"return_exceptions": True})
 
         tasks = [invoke_chain(prompt_string) for _ in range(prompt_repetitions)]
-        
+
         try:
             results = await asyncio.gather(*tasks)
-            
+
             successful_responses = []
             for res in results:
                 if isinstance(res, Exception):
@@ -131,7 +138,9 @@ async def _generate_responses_for_chunk_api(
                 **response_dict_format,
                 "input": prompt_string,
                 "response": successful_responses,
-                "additional_info": response_dict_format.get("additional_info", {}).copy(),
+                "additional_info": response_dict_format.get(
+                    "additional_info", {}
+                ).copy(),
             }
 
             if additional_info and i < len(additional_info) and additional_info[i]:
@@ -157,7 +166,7 @@ async def generate_responses_tuned_model(
     llm,
     tokenizer,
     prompt_class: StringPromptTemplate,
-    dataset: list[dict], # This represents a single chunk of data
+    dataset: list[dict],  # This represents a single chunk of data
     response_dict_format: dict,
     data_processing_function: Callable | None = None,
     prompt_repetitions: int = 1,
@@ -169,7 +178,7 @@ async def generate_responses_tuned_model(
     """
     if not data_processing_function:
         raise ValueError("'data_processing_function' must be provided.")
-    
+
     model_input, additional_info = data_processing_function(dataset)
 
     def process_item(i: int, item_input: dict) -> dict | None:
@@ -182,9 +191,11 @@ async def generate_responses_tuned_model(
             for i in range(prompt_repetitions):
                 inputs = tokenizer(prompt_string, return_tensors="pt").to(llm.device)
                 generated_ids = llm.generate(
-                    **inputs, temperature=temperature, 
-                    max_new_tokens=max_new_tokens, do_sample=True, 
-                    tokenizer=tokenizer
+                    **inputs,
+                    temperature=temperature,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=True,
+                    tokenizer=tokenizer,
                 )
 
                 res = tokenizer.decode(generated_ids[0], skip_special_tokens=False)
@@ -204,7 +215,9 @@ async def generate_responses_tuned_model(
                 **response_dict_format,
                 "input": prompt_string,
                 "response": successful_responses,
-                "additional_info": response_dict_format.get("additional_info", {}).copy(),
+                "additional_info": response_dict_format.get(
+                    "additional_info", {}
+                ).copy(),
             }
 
             if additional_info and i < len(additional_info) and additional_info[i]:
@@ -250,14 +263,14 @@ async def _process_data_chunk(
         A list of results from the model. Failed calls are logged and excluded.
     """
     semaphore = asyncio.Semaphore(max_concurrency)
-    
+
     async def process_item(item):
         """Safely process one item using the semaphore."""
         async with semaphore:
             return await agent.model.ainvoke(extract_args(item))
 
     tasks = [process_item(item) for item in data_chunk]
-    
+
     # Gather results, allowing individual tasks to fail without stopping others.
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -289,7 +302,7 @@ async def generate_responses_concurrently_deployed(
     It determines the model type based on the presence of a tokenizer.
     """
     all_results = []
-    
+
     tasks = [
         _generate_responses_for_chunk_deployed(
             model=model,
@@ -302,14 +315,16 @@ async def generate_responses_concurrently_deployed(
             max_length=max_length,
             max_new_tokens=max_new_tokens,
             temperature=temperature,
-        ) for data_chunk in data_chunks
+        )
+        for data_chunk in data_chunks
     ]
-    
+
     result_chunks = await asyncio.gather(*tasks, return_exceptions=False)
     for chunk in result_chunks:
         all_results.extend(chunk)
 
     return all_results
+
 
 async def generate_responses_concurrently_api(
     llm,
@@ -325,7 +340,7 @@ async def generate_responses_concurrently_api(
     """
     all_results = []
     semaphore = asyncio.Semaphore(prompt_repetitions)
-    
+
     tasks = [
         _generate_responses_for_chunk_api(
             llm=llm,
@@ -335,9 +350,10 @@ async def generate_responses_concurrently_api(
             data_processing_function=data_processing_function,
             prompt_repetitions=prompt_repetitions,
             semaphore=semaphore,
-        ) for data_chunk in data_chunks
+        )
+        for data_chunk in data_chunks
     ]
-    
+
     result_chunks = await asyncio.gather(*tasks, return_exceptions=False)
     for chunk in result_chunks:
         all_results.extend(chunk)
@@ -368,15 +384,15 @@ async def concurrent_data_postprocessing(
         A flattened list containing all successful results from all chunks.
     """
     all_results = []
-    
+
     tasks = [
         _process_data_chunk(agent, data_chunk, extract_args, max_concurrency)
         for data_chunk in data_chunks
     ]
-    
+
     # Gather the results from all chunk-processing tasks.
     result_chunks = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     for chunk_result in result_chunks:
         if isinstance(chunk_result, Exception):
             logger.error(f"A data chunk failed to process entirely: {chunk_result}")
@@ -392,19 +408,25 @@ def split_dataset(dataset: Sequence[dict], num_chunks: int) -> list[Sequence[dic
         raise ValueError("Number of chunks must be a positive integer.")
     samples_per_chunk = len(dataset) // num_chunks
     if samples_per_chunk == 0:
-        logger.warning(f"Dataset size ({len(dataset)}) is smaller than number of chunks ({num_chunks}). Returning fewer chunks.")
+        logger.warning(
+            f"Dataset size ({len(dataset)}) is smaller than number of chunks ({num_chunks}). Returning fewer chunks."
+        )
         samples_per_chunk = 1
         num_chunks = len(dataset)
 
     dataset_chunks = []
     for i in range(num_chunks - 1):
-        dataset_chunks.append(dataset[i*samples_per_chunk:(i+1)*samples_per_chunk])
+        dataset_chunks.append(
+            dataset[i * samples_per_chunk : (i + 1) * samples_per_chunk]
+        )
 
-    dataset_chunks.append(dataset[(num_chunks - 1)*samples_per_chunk:])
+    dataset_chunks.append(dataset[(num_chunks - 1) * samples_per_chunk :])
     return dataset_chunks
 
 
-def split_columnar_dataset(dataset: dict[str, list], num_chunks: int) -> list[dict[str, list]]:
+def split_columnar_dataset(
+    dataset: dict[str, list], num_chunks: int
+) -> list[dict[str, list]]:
     """
     Splits a column-oriented dataset (a dictionary of lists) into a specified
     number of chunks. Each chunk is also a column-oriented dictionary.
@@ -420,7 +442,9 @@ def split_columnar_dataset(dataset: dict[str, list], num_chunks: int) -> list[di
 
     chunk_size = num_samples // num_chunks
     if chunk_size == 0:
-        logger.warning(f"Dataset size ({num_samples}) is smaller than number of chunks ({num_chunks}). Returning {num_samples} chunks.")
+        logger.warning(
+            f"Dataset size ({num_samples}) is smaller than number of chunks ({num_chunks}). Returning {num_samples} chunks."
+        )
         num_chunks = num_samples
         chunk_size = 1
 
@@ -429,14 +453,18 @@ def split_columnar_dataset(dataset: dict[str, list], num_chunks: int) -> list[di
         start_index = i * chunk_size
         # For the last chunk, take all remaining samples
         end_index = (i + 1) * chunk_size if i < num_chunks - 1 else num_samples
-        
-        chunk_dict = {key: value[start_index:end_index] for key, value in dataset.items()}
+
+        chunk_dict = {
+            key: value[start_index:end_index] for key, value in dataset.items()
+        }
         chunks.append(chunk_dict)
-        
+
     return chunks
 
 
-def nested_split_dataset(dataset: Sequence, num_major_chunks: int, num_minor_chunks: int) -> list[list[dict[str, list]]]:
+def nested_split_dataset(
+    dataset: Sequence, num_major_chunks: int, num_minor_chunks: int
+) -> list[list[dict[str, list]]]:
     """
     Performs a two-level split on a Hugging Face Dataset. It first splits the
     dataset into major chunks, then subdivides those into minor chunks.
@@ -454,11 +482,16 @@ def nested_split_dataset(dataset: Sequence, num_major_chunks: int, num_minor_chu
         Example: nested_list[0][0] -> {'source': ['SVAMP', 'MAT'], 'answer': [..., ...]}
     """
     major_chunks_columnar = split_dataset(dataset, num_major_chunks)
-    
+
     nested_final_chunks = []
     for columnar_major_chunk in major_chunks_columnar:
-        if columnar_major_chunk and len(next(iter(columnar_major_chunk.values()), [])) > 0:
-            minor_chunks_columnar = split_columnar_dataset(columnar_major_chunk, num_minor_chunks)
+        if (
+            columnar_major_chunk
+            and len(next(iter(columnar_major_chunk.values()), [])) > 0
+        ):
+            minor_chunks_columnar = split_columnar_dataset(
+                columnar_major_chunk, num_minor_chunks
+            )
             nested_final_chunks.append(minor_chunks_columnar)
-            
+
     return nested_final_chunks

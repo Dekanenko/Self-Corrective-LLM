@@ -1,5 +1,6 @@
 from langchain.prompts import StringPromptTemplate
 
+
 class MathQAPrompt(StringPromptTemplate):
     TEMPLATE: str = (
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
@@ -58,7 +59,6 @@ class ContextualQAPrompt(StringPromptTemplate):
         "<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
     )
 
-
     def format(self, query: str, context: str) -> str:
         return self.TEMPLATE.format(query=query, context=context)
 
@@ -80,7 +80,6 @@ class ContextualQAPromptWithDeletionTokens(StringPromptTemplate):
         "Question: {query}"
         "<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
     )
-
 
     def format(self, query: str, context: str) -> str:
         return self.TEMPLATE.format(query=query, context=context)

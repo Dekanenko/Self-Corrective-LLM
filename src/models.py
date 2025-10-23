@@ -2,26 +2,35 @@ from typing import TypedDict
 from pydantic import BaseModel, Field, conlist
 
 
-# class Error(BaseModel):
-#     """
-#     A model to represent an error found in a response.
-#     """
-#     description: str = Field(description="The error found in the response.")
-#     location: str = Field(description="The location of the error in the response.")
-#     correction: str = Field(description="Explanation on how to correct the error.")
-
 class Error(BaseModel):
     """
     A model to represent an error found in a response.
     """
-    description: str = Field(description="Super short and clear description of the error. Max 10 words.")
+
+    description: str = Field(description="The error found in the response.")
+    location: str = Field(description="The location of the error in the response.")
+    correction: str = Field(description="Explanation on how to correct the error.")
+
+
+class ShortError(BaseModel):
+    """
+    A model to represent an error found in a response.
+    """
+
+    description: str = Field(
+        description="Super short and clear description of the error. Max 10 words."
+    )
 
 
 class ErrorList(BaseModel):
     """
     A model to hold a list of errors found in a response.
     """
-    errors: list[Error] = Field(default=[], description="A list of errors found in the response.")
+
+    errors: list[Error | ShortError] = Field(
+        default=[], description="A list of errors found in the response."
+    )
+
 
 class ContextQACorrectionState(TypedDict):
     input: str = Field(default="")
@@ -61,6 +70,7 @@ class RAPRState(TypedDict):
     input_tokens: int = Field(default=0)
     output_tokens: int = Field(default=0)
 
+
 class CoVEState(TypedDict):
     initial_question: str = Field(default="")
     initial_response: str = Field(default="")
@@ -71,6 +81,7 @@ class CoVEState(TypedDict):
     answer_verification_mask: list[bool] = Field(default=[])
     input_tokens: int = Field(default=0)
     output_tokens: int = Field(default=0)
+
 
 class MathAgentState(TypedDict):
     question: str = Field(default="")

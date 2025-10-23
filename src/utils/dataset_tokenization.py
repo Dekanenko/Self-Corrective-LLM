@@ -2,6 +2,7 @@ import re
 import codecs
 from transformers import AutoTokenizer
 
+
 def extract_deleted_text(correction_string: str) -> str | None:
     """
     Robustly extracts the text to be deleted from a correction string.
@@ -22,22 +23,24 @@ def extract_deleted_text(correction_string: str) -> str | None:
     """
     pattern = r"DELETE:?\s*(?:['\"](.*?)['\"]|(.*?))(?=\s*\bADD:|$)"
     match = re.search(pattern, correction_string, re.IGNORECASE | re.DOTALL)
-    
+
     if match:
         deleted_text = match.group(1) if match.group(1) is not None else match.group(2)
         return deleted_text.strip()
-    
+
     return None
 
 
-def add_deletion_instruction(input_text: str, special_instruction: str, insertion_marker: str) -> str:
+def add_deletion_instruction(
+    input_text: str, special_instruction: str, insertion_marker: str
+) -> str:
     try:
         insertion_index = input_text.find(insertion_marker)
         if insertion_index != -1:
             modified_prompt = (
-                input_text[:insertion_index] +
-                f"{special_instruction}" +
-                input_text[insertion_index:]
+                input_text[:insertion_index]
+                + f"{special_instruction}"
+                + input_text[insertion_index:]
             )
             return modified_prompt
         else:
@@ -49,7 +52,7 @@ def add_deletion_instruction(input_text: str, special_instruction: str, insertio
 
 
 def assign_hallucination_labels(
-    item: dict, 
+    item: dict,
     prompt_token_len: int,
     del_s_token_id: int,
     del_a_token_id: int,
@@ -61,29 +64,32 @@ def assign_hallucination_labels(
             j = i
             while j < len(hallucination_labels) and hallucination_labels[j] == 1:
                 j += 1
-            
-            if j-1 != i:
-                if item["input_ids"][j-1] == del_a_token_id:
-                    hallucination_labels[i:j] = [2] * (j-i)
+
+            if j - 1 != i:
+                if item["input_ids"][j - 1] == del_a_token_id:
+                    hallucination_labels[i:j] = [2] * (j - i)
             i = j
         else:
             i += 1
-        
+
     for i in range(prompt_token_len, len(hallucination_labels)):
         if hallucination_labels[i] != 0:
             if item["input_ids"][i] == del_s_token_id:
                 hallucination_labels[i] = 1
             elif item["input_ids"][i] == del_a_token_id:
-                for j in range(i, prompt_token_len-1, -1):
-                    if hallucination_labels[j] != 0 and item["input_ids"][j] != del_s_token_id:
+                for j in range(i, prompt_token_len - 1, -1):
+                    if (
+                        hallucination_labels[j] != 0
+                        and item["input_ids"][j] != del_s_token_id
+                    ):
                         hallucination_labels[j] = 2
-            
+
     item["hallucination_labels"] = hallucination_labels
     return item
 
 
 def mask_token_labels(
-    item: dict, 
+    item: dict,
     prompt_token_len: int,
     del_s_token_id: int,
     del_a_token_id: int,
@@ -99,11 +105,11 @@ def mask_token_labels(
         if item["labels"][i] == del_s_token_id or item["labels"][i] == del_a_token_id:
             if not first_del_token:
                 first_del_token = True
-                for j in range(i, prompt_token_len-1, -1):
+                for j in range(i, prompt_token_len - 1, -1):
                     labels[j] = -100
-            
+
             labels[i] = item["labels"][i]
-    
+
     item["labels"] = labels
     return item
 
@@ -123,27 +129,49 @@ def replace_deletion_tokens(
 
     while i < len(item["labels"]):
         if item["input_ids"][i] == del_s_token_id:
-            item["input_ids"] = item["input_ids"][:i] + del_s_replacement + item["input_ids"][i+1:]
-            item["labels"] = item["labels"][:i] + del_s_mask + item["labels"][i+1:]
-            item["hallucination_labels"] = item["hallucination_labels"][:i] + [1] + del_s_mask[1:] + item["hallucination_labels"][i+1:]
-            item["attention_mask"] = item["attention_mask"][:i] + [1] * len(del_s_replacement) + item["attention_mask"][i+1:]
+            item["input_ids"] = (
+                item["input_ids"][:i] + del_s_replacement + item["input_ids"][i + 1 :]
+            )
+            item["labels"] = item["labels"][:i] + del_s_mask + item["labels"][i + 1 :]
+            item["hallucination_labels"] = (
+                item["hallucination_labels"][:i]
+                + [1]
+                + del_s_mask[1:]
+                + item["hallucination_labels"][i + 1 :]
+            )
+            item["attention_mask"] = (
+                item["attention_mask"][:i]
+                + [1] * len(del_s_replacement)
+                + item["attention_mask"][i + 1 :]
+            )
             i += len(del_s_replacement)
         elif item["input_ids"][i] == del_a_token_id:
-            item["input_ids"] = item["input_ids"][:i] + del_a_replacement + item["input_ids"][i+1:]
-            item["labels"] = item["labels"][:i] + del_a_mask + item["labels"][i+1:]
-            item["hallucination_labels"] = item["hallucination_labels"][:i] + [2] + del_a_mask[1:] + item["hallucination_labels"][i+1:]
-            item["attention_mask"] = item["attention_mask"][:i] + [1] * len(del_a_replacement) + item["attention_mask"][i+1:]
+            item["input_ids"] = (
+                item["input_ids"][:i] + del_a_replacement + item["input_ids"][i + 1 :]
+            )
+            item["labels"] = item["labels"][:i] + del_a_mask + item["labels"][i + 1 :]
+            item["hallucination_labels"] = (
+                item["hallucination_labels"][:i]
+                + [2]
+                + del_a_mask[1:]
+                + item["hallucination_labels"][i + 1 :]
+            )
+            item["attention_mask"] = (
+                item["attention_mask"][:i]
+                + [1] * len(del_a_replacement)
+                + item["attention_mask"][i + 1 :]
+            )
             i += len(del_a_replacement)
         else:
             i += 1
-        
+
     return item
 
 
 def process_data(
-    item: dict, 
-    tokenizer: AutoTokenizer, 
-    special_instruction: str, 
+    item: dict,
+    tokenizer: AutoTokenizer,
+    special_instruction: str,
     insertion_marker: str,
     del_s_token_id: int,
     del_a_token_id: int,
@@ -171,7 +199,7 @@ def process_data(
       not part of a larger word or number (e.g., finding "4" is ignored if it's
       part of "48"). This handles large, contiguous errors precisely. It also
       correctly processes escaped characters (e.g., `\"`) from the input JSON.
-    
+
     - Pass 2 (Deletion Token Labeling): Iterates through the completion tokens.
       If a token is a deletion token (`<DEL_S>`, `<DEL_A>`), it is labeled `1`.
       If the token is `<DEL_W>`, both the token itself and the entire preceding
@@ -207,22 +235,22 @@ def process_data(
               - 'hallucination_labels': The binary hallucination labels.
     """
     # 1. Prepare prompt and completion strings
-    prompt = add_deletion_instruction(item["input"], special_instruction, insertion_marker)
+    prompt = add_deletion_instruction(
+        item["input"], special_instruction, insertion_marker
+    )
     completion = f'{item["correct_response"]}<|eot_id|>'
     full_text = prompt + completion
     full_text = full_text.replace("\\n", "\n")
-    
+
     # 2. Tokenize the full text with offset mappings
     model_inputs = tokenizer(
-        full_text, 
-        add_special_tokens=False, 
-        return_offsets_mapping=True
+        full_text, add_special_tokens=False, return_offsets_mapping=True
     )
-    input_ids = model_inputs['input_ids']
-    offset_mapping = model_inputs['offset_mapping']
+    input_ids = model_inputs["input_ids"]
+    offset_mapping = model_inputs["offset_mapping"]
 
     # 3. Create standard Causal LM labels
-    prompt_token_len = len(tokenizer(prompt, add_special_tokens=False)['input_ids'])
+    prompt_token_len = len(tokenizer(prompt, add_special_tokens=False)["input_ids"])
     labels = list(input_ids)
     labels[:prompt_token_len] = [-100] * prompt_token_len
     model_inputs["labels"] = labels
@@ -248,24 +276,28 @@ def process_data(
 
                 # A match is valid UNLESS it's "glued" to alphanumeric characters on both sides.
                 # Check char before the match
-                start_char_is_alnum = start_index > 0 and full_text[start_index - 1].isalnum()
-                
+                start_char_is_alnum = (
+                    start_index > 0 and full_text[start_index - 1].isalnum()
+                )
+
                 # Check first char of the match itself
                 text_starts_with_alnum = text_to_find[0].isalnum()
 
                 # Check char after the match
-                end_char_is_alnum = end_index < len(full_text) and full_text[end_index].isalnum()
-                
+                end_char_is_alnum = (
+                    end_index < len(full_text) and full_text[end_index].isalnum()
+                )
+
                 # Check last char of the match itself
                 text_ends_with_alnum = text_to_find[-1].isalnum()
 
                 # The match is invalid ONLY if it forms a longer word/number with its surroundings.
                 # E.g., `pre[MATCH]post` where all are alphanumeric.
                 if start_char_is_alnum and text_starts_with_alnum:
-                    continue # Invalid match, e.g. finding 'port' in 'airport'
+                    continue  # Invalid match, e.g. finding 'port' in 'airport'
                 if end_char_is_alnum and text_ends_with_alnum:
-                    continue # Invalid match, e.g. finding 'cat' in 'catch'
-                
+                    continue  # Invalid match, e.g. finding 'cat' in 'catch'
+
                 # If we pass the checks, it's a valid match
                 for i, (token_start, token_end) in enumerate(offset_mapping):
                     if max(token_start, start_index) < min(token_end, end_index):
@@ -277,43 +309,49 @@ def process_data(
         # --- Pass 2: Special handling for deletion tokens ---
         for i in range(prompt_token_len, len(input_ids)):
             token_id = input_ids[i]
-                    
+
             if token_id == del_s_token_id or token_id == del_a_token_id:
                 # Label other deletion tokens (<DEL_S>, <DEL_A>) as 1.
                 hallucination_labels[i] = 1
-            
+
         # --- Pass 3: Heuristic correction for missed <DEL_S> and <DEL_A> spans ---
-        sentence_boundary_chars = {'.', '!', '?', '\n'}
+        sentence_boundary_chars = {".", "!", "?", "\n"}
         # Iterate backwards through the completion tokens
         for i in range(len(input_ids) - 1, prompt_token_len, -1):
             token_id = input_ids[i]
             is_del_s_or_a = token_id == del_s_token_id or token_id == del_a_token_id
-            
+
             # Trigger condition: A <DEL_S/A> token is labeled, but the token before it is not.
-            if is_del_s_or_a and hallucination_labels[i] == 1 and hallucination_labels[i - 1] == 0:
-                
+            if (
+                is_del_s_or_a
+                and hallucination_labels[i] == 1
+                and hallucination_labels[i - 1] == 0
+            ):
+
                 span_start_idx = prompt_token_len
                 found_other_hallucination = False
                 capture_whole_sentence = False
-                
+
                 # Scan backwards from the token before the deletion token.
                 for j in range(i - 1, prompt_token_len - 1, -1):
                     # if not capture_whole_sentence and token_id == del_s_token_id and input_ids[j] == del_w_token_id:
                     #     capture_whole_sentence = True
-                
+
                     if not capture_whole_sentence and hallucination_labels[j] == 1:
                         # found_other_hallucination = True
                         span_start_idx = j + 1
                         break
-                    
+
                     # For <DEL_S>, stop if we find a sentence boundary.
-                    if capture_whole_sentence or (token_id == del_s_token_id and j < i - 1):
+                    if capture_whole_sentence or (
+                        token_id == del_s_token_id and j < i - 1
+                    ):
                         tok_start, tok_end = offset_mapping[j]
                         tok_text = full_text[tok_start:tok_end]
                         if any(char in sentence_boundary_chars for char in tok_text):
                             span_start_idx = j + 1
                             break
-                
+
                 # If we scanned the whole span without finding existing labels...
                 if not found_other_hallucination:
                     # ...then apply the correction.
@@ -331,7 +369,12 @@ def process_data(
     )
 
     model_inputs = replace_deletion_tokens(
-        model_inputs, prompt_token_len, del_s_token_id, del_a_token_id, del_s_replacement, del_a_replacement
+        model_inputs,
+        prompt_token_len,
+        del_s_token_id,
+        del_a_token_id,
+        del_s_replacement,
+        del_a_replacement,
     )
 
     if mask_labels:

@@ -1,4 +1,3 @@
-import time
 from loguru import logger
 
 from transformers import PreTrainedTokenizer
@@ -13,13 +12,14 @@ from src.prompts.math_agent_prompts import (
     CorrectResponsePrompt,
 )
 
+
 class MathAgent:
     def __init__(
-            self, 
-            response_model_name: str = "meta-llama/Meta-Llama-3.1-8B-Instruct", 
-            eval_model_name: str = "gemini-2.0-flash", 
-            temperature: float = 0.5,
-            tokenizer: PreTrainedTokenizer = None,
+        self,
+        response_model_name: str = "meta-llama/Meta-Llama-3.1-8B-Instruct",
+        eval_model_name: str = "gemini-2.0-flash",
+        temperature: float = 0.5,
+        tokenizer: PreTrainedTokenizer = None,
     ):
         self.tokenizer = tokenizer
         self.response_llm = DeepInfra(model_id="meta-llama/Meta-Llama-3.1-8B-Instruct")
@@ -28,11 +28,11 @@ class MathAgent:
             "max_new_tokens": 512,
         }
         self.eval_llm = ChatGoogleGenerativeAI(
-            model=eval_model_name, 
+            model=eval_model_name,
             temperature=temperature,
         )
         self.model = self._build_graph().compile()
-    
+
     def _build_graph(self) -> StateGraph:
         graph = StateGraph(MathAgentState)
 
@@ -40,30 +40,38 @@ class MathAgent:
         graph.add_node("correct_response", self.correct_response)
 
         graph.set_entry_point("check_response")
-        graph.add_conditional_edges("check_response", self.should_correct, {True: "correct_response", False: END})
+        graph.add_conditional_edges(
+            "check_response",
+            self.should_correct,
+            {True: "correct_response", False: END},
+        )
         graph.add_edge("correct_response", END)
         return graph
-
 
     def check_response(self, state: MathAgentState) -> MathAgentState:
         question = state["question"]
         initial_response = state["initial_response"]
 
-        prompt = CheckResponsePrompt(input_variables=[
-            "question", "initial_response",
-        ])
+        prompt = CheckResponsePrompt(
+            input_variables=[
+                "question",
+                "initial_response",
+            ]
+        )
 
         chain = self.eval_llm
 
         prompt = prompt.format(
-            question=question, 
-            initial_response=initial_response, 
+            question=question,
+            initial_response=initial_response,
         )
         response = chain.invoke(prompt)
 
         usage_metadata = response.usage_metadata
         state["input_tokens"] = usage_metadata["input_tokens"] if usage_metadata else 0
-        state["output_tokens"] = usage_metadata["output_tokens"] if usage_metadata else 0
+        state["output_tokens"] = (
+            usage_metadata["output_tokens"] if usage_metadata else 0
+        )
 
         response = response.content.strip()
         state["correction"] = response
@@ -75,21 +83,25 @@ class MathAgent:
     def should_correct(self, state: MathAgentState) -> bool:
         correction = state["correction"]
         return len(correction.strip()) > 15
-    
+
     def correct_response(self, state: MathAgentState) -> MathAgentState:
         question = state["question"]
         initial_response = state["initial_response"]
         correction = state["correction"]
 
-        prompt = CorrectResponsePrompt(input_variables=[
-            "question", "initial_response", "correction",
-        ])
+        prompt = CorrectResponsePrompt(
+            input_variables=[
+                "question",
+                "initial_response",
+                "correction",
+            ]
+        )
 
         chain = self.response_llm
         prompt = prompt.format(
-            question=question, 
-            initial_response=initial_response, 
-            correction=correction, 
+            question=question,
+            initial_response=initial_response,
+            correction=correction,
         )
         response = chain.invoke(prompt)
 

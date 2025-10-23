@@ -8,32 +8,37 @@ from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
 
 from src.models import ErrorList, ContextQACorrectionState
 from src.prompts.gemini_agent_prompts import (
-    ContextQAErrorCheckPrompt, 
-    ContextQAErrorCorrectionPrompt, 
-    ContextQAResponseVerificationPrompt,
+    ContextQAErrorCheckPrompt,
     ContextQAEvalErrorCheckPrompt,
+    ContextQAErrorCorrectionPrompt,
+    ContextQAResponseVerificationPrompt,
 )
 from src.utils.formatting import ensure_space_after_del_tokens, apply_del_tokens
 
+
 class ContextQACorrectionAgent:
     def __init__(
-            self, 
-            error_check_model_name: str = "gemini-2.0-flash", 
-            correction_model_name: str = "gemini-2.0-flash", 
-            error_check_temperature: float = 0.2, 
-            correction_temperature: float = 0.3, 
-            error_detection_only: bool = False,
-            apply_deletion_tags: bool = False,
-            max_responses_to_correct: int = 3,
+        self,
+        error_check_model_name: str = "gemini-2.0-flash",
+        correction_model_name: str = "gemini-2.0-flash",
+        error_check_temperature: float = 0.2,
+        correction_temperature: float = 0.3,
+        error_detection_only: bool = False,
+        apply_deletion_tags: bool = False,
+        max_responses_to_correct: int = 3,
     ):
-        self.error_check_llm = ChatGoogleGenerativeAI(model=error_check_model_name, temperature=error_check_temperature)
-        self.correction_llm = ChatGoogleGenerativeAI(model=correction_model_name, temperature=correction_temperature)
+        self.error_check_llm = ChatGoogleGenerativeAI(
+            model=error_check_model_name, temperature=error_check_temperature
+        )
+        self.correction_llm = ChatGoogleGenerativeAI(
+            model=correction_model_name, temperature=correction_temperature
+        )
         self.error_detection_only = error_detection_only
         self.apply_deletion_tags = apply_deletion_tags
         self.max_responses_to_correct = max_responses_to_correct
 
         self.model = self._build_graph().compile()
-    
+
     def _build_graph(self) -> StateGraph:
         graph = StateGraph(ContextQACorrectionState)
 
@@ -49,9 +54,12 @@ class ContextQACorrectionAgent:
         graph.add_edge("verify_corrected_response", "filter_verified_responses")
         graph.add_edge("filter_verified_responses", END)
 
-        graph.add_conditional_edges("check_for_errors", self.should_correct, {True: "get_errors_to_correct", False: END})
+        graph.add_conditional_edges(
+            "check_for_errors",
+            self.should_correct,
+            {True: "get_errors_to_correct", False: END},
+        )
         return graph
-    
 
     def _batch_with_retry(self, chain, prompts):
         results = [None] * len(prompts)
@@ -61,66 +69,87 @@ class ContextQACorrectionAgent:
 
         while indexed_prompts_to_process:
             indices, prompts_to_run = zip(*indexed_prompts_to_process)
-            
+
             batch_results = chain.batch(prompts_to_run, return_exceptions=True)
-            
             failed_prompts_for_next_retry = []
 
             for i, res in enumerate(batch_results):
                 original_index = indices[i]
                 if isinstance(res, Exception):
                     if isinstance(res, ResourceExhausted):
-                        # logger.warning(f"Rate limit exceeded for a prompt. Will retry. Error: {res}")
-                        failed_prompts_for_next_retry.append((original_index, prompts[original_index]))
+                        logger.warning(
+                            f"Rate limit exceeded for a prompt. Will retry. Error: {res}"
+                        )
+                        failed_prompts_for_next_retry.append(
+                            (original_index, prompts[original_index])
+                        )
                     else:
-                        # logger.error(f"An unexpected error occurred for a prompt and it will not be retried: {res}")
+                        logger.error(
+                            f"An unexpected error occurred for a prompt and it will not be retried: {res}"
+                        )
                         results[original_index] = res
                 else:
                     results[original_index] = res
-            
+
             if failed_prompts_for_next_retry:
-                logger.info(f"{len(failed_prompts_for_next_retry)} requests failed due to rate limits. Retrying in {wait_time} seconds...")
+                logger.info(
+                    f"{len(failed_prompts_for_next_retry)} requests failed due to rate limits. Retrying in {wait_time} seconds..."
+                )
                 time.sleep(wait_time)
                 indexed_prompts_to_process = failed_prompts_for_next_retry
             else:
                 indexed_prompts_to_process = []
-                
+
         return results
 
-    
-    def check_for_errors(self, state: ContextQACorrectionState) -> ContextQACorrectionState:
+    def check_for_errors(
+        self, state: ContextQACorrectionState
+    ) -> ContextQACorrectionState:
         question = state["question"]
         context = state["context"]
         answer = state["answer"]
         response_batch = state["responses"]
 
         parser = PydanticOutputParser(pydantic_object=ErrorList)
-        prompt = ContextQAEvalErrorCheckPrompt(input_variables=[
-            "question", "context", "answer", 
-            "response", "format_instructions",
-        ])
+        if self.error_detection_only:
+            prompt = ContextQAEvalErrorCheckPrompt(
+                input_variables=[
+                    "question",
+                    "context",
+                    "answer",
+                    "response",
+                    "format_instructions",
+                ]
+            )
+        else:
+            prompt = ContextQAErrorCheckPrompt(
+                input_variables=[
+                    "question",
+                    "context",
+                    "answer",
+                    "response",
+                    "format_instructions",
+                ]
+            )
 
         if self.apply_deletion_tags:
-            # print("Before applying deletion tags:", "\n---\n".join(response_batch))
             response_batch = [apply_del_tokens(res) for res in response_batch]
-            # print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
 
         # batch inputs
         prompts = [
             prompt.format(
-                question=question, 
-                context=context, 
-                answer=answer, 
-                response=res, 
+                question=question,
+                context=context,
+                answer=answer,
+                response=res,
                 format_instructions=parser.get_format_instructions(),
             )
             for res in response_batch
         ]
-  
+
         chain = self.error_check_llm | parser
-        # result = chain.batch(prompts, return_exceptions=True)
         result = self._batch_with_retry(chain, prompts)
-        
+
         errors = []
         wrong_response_number = 0
         responses = []
@@ -131,28 +160,29 @@ class ContextQACorrectionAgent:
                 responses.append(response_batch[i])
                 wrong_response_number += 1 if result[i].errors else 0
             else:
-                logger.error(f"An unexpected error occurred for a prompt and it will not be retried: {result[i]}")
-
-        # logger.info(f"Errors: {errors}")
-        # logger.info(f"Wrong responses: {wrong_response_number}")
+                logger.error(
+                    f"An unexpected error occurred for a prompt and it will not be retried: {result[i]}"
+                )
 
         state["errors"] = errors
         state["wrong_response_number"] = wrong_response_number
         state["responses"] = responses
         return state
-    
+
     def should_correct(self, state: ContextQACorrectionState) -> bool:
         if self.error_detection_only:
             return False
-    
-        # return bool(self.error_number) and self.error_number < len(errors)
         return bool(state["wrong_response_number"])
-    
-    def get_errors_to_correct(self, state: ContextQACorrectionState) -> ContextQACorrectionState:
+
+    def get_errors_to_correct(
+        self, state: ContextQACorrectionState
+    ) -> ContextQACorrectionState:
         errors = state["errors"]
         wrong_response_number = state["wrong_response_number"]
         responses = state["responses"]
-        num_responses_to_correct = min(wrong_response_number, self.max_responses_to_correct)
+        num_responses_to_correct = min(
+            wrong_response_number, self.max_responses_to_correct
+        )
 
         zipped_lists = zip(errors, responses)
         sorted_pairs = sorted(zipped_lists, key=lambda pair: len(pair[0]), reverse=True)
@@ -162,78 +192,85 @@ class ContextQACorrectionAgent:
         state["errors_to_correct"] = errors
         state["responses_to_correct"] = responses
 
-        # logger.info(f"Errors to correct: {errors}")
-        # logger.info(f"Responses to correct: {responses}")
-
         return state
-    
-    def correct_response(self, state: ContextQACorrectionState) -> ContextQACorrectionState:
+
+    def correct_response(
+        self, state: ContextQACorrectionState
+    ) -> ContextQACorrectionState:
         question = state["question"]
         context = state["context"]
         answer = state["answer"]
         response_batch = state["responses_to_correct"]
         errors = state["errors_to_correct"]
 
-        prompt = ContextQAErrorCorrectionPrompt(input_variables=[
-            "question", "context", "answer", 
-            "response", "errors",
-        ])
+        prompt = ContextQAErrorCorrectionPrompt(
+            input_variables=[
+                "question",
+                "context",
+                "answer",
+                "response",
+                "errors",
+            ]
+        )
 
         # batch inputs
         prompts = [
             prompt.format(
-                question=question, 
-                context=context, 
-                answer=answer, 
-                response=res, 
+                question=question,
+                context=context,
+                answer=answer,
+                response=res,
                 errors=err,
             )
             for res, err in zip(response_batch, errors)
         ]
-  
-        chain = self.correction_llm | StrOutputParser()
 
+        chain = self.correction_llm | StrOutputParser()
         corrected_responses = self._batch_with_retry(chain, prompts)
-        
-        # logger.info(f"Corrected responses: {corrected_responses}")
-        # corrected_responses = [res.replace("[DELETE_WORD]", "<DEL_W>").replace("[DELETE_SENTENCE]", "<DEL_S>").replace("[DELETE_ALL]", "<DEL_A>") for res in corrected_responses]
-        state["corrected_responses"] = [ensure_space_after_del_tokens(res) for res in corrected_responses]
+
+        state["corrected_responses"] = [
+            ensure_space_after_del_tokens(res) for res in corrected_responses
+        ]
         return state
 
-    def verify_corrected_response(self, state: ContextQACorrectionState) -> ContextQACorrectionState:
+    def verify_corrected_response(
+        self, state: ContextQACorrectionState
+    ) -> ContextQACorrectionState:
         question = state["question"]
         context = state["context"]
         answer = state["answer"]
         corrected_responses = state["corrected_responses"]
 
-        prompt = ContextQAResponseVerificationPrompt(input_variables=[
-            "question", "context", "answer", "corrected_response"
-        ])
+        prompt = ContextQAResponseVerificationPrompt(
+            input_variables=["question", "context", "answer", "corrected_response"]
+        )
 
         # batch inputs
         prompts = [
             prompt.format(
-                question=question, 
-                context=context, 
-                answer=answer, 
-                corrected_response=res
+                question=question,
+                context=context,
+                answer=answer,
+                corrected_response=res,
             )
             for res in corrected_responses
         ]
-  
+
         chain = self.correction_llm | StrOutputParser()
         verified_response_mask = self._batch_with_retry(chain, prompts)
 
-        # logger.info(f"Verified responses: {verified_response_mask}")
-
-        state["verified_response_mask"] = ['true' in response.lower() for response in verified_response_mask]
+        state["verified_response_mask"] = [
+            "true" in response.lower() for response in verified_response_mask
+        ]
         return state
 
-    def filter_verified_responses(self, state: ContextQACorrectionState) -> ContextQACorrectionState:
+    def filter_verified_responses(
+        self, state: ContextQACorrectionState
+    ) -> ContextQACorrectionState:
         """Filters responses and errors, keeping only those marked as verified."""
         responses = state["corrected_responses"]
         mask = state["verified_response_mask"]
-        
+
         state["corrected_responses"] = [
             response for response, verified in zip(responses, mask) if verified
         ]
