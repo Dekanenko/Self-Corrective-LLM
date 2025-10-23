@@ -27,7 +27,7 @@ The project is divided into three main parts:
 
 ## Resources
 
--   **Fine-tuned Model**: The `SelfCorrectiveLlama` model, fine-tuned for self-correction, is available on the Hugging Face Hub. [Link to the model](<MathBite/self_corrective_llama_3.1_8B>)
+-   **Fine-tuned Model**: The `SelfCorrectiveLlama` model, fine-tuned for self-correction, is available on the Hugging Face Hub. [Link to the model](<https://huggingface.co/MathBite/self_corrective_llama_3.1_8B>)
 
 ## Key Features
 
