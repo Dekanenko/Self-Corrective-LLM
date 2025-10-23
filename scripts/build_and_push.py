@@ -16,13 +16,13 @@ load_dotenv()
 # Set up professional logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
 # Add project root to Python path to allow absolute imports
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -30,23 +30,25 @@ from src.modeling import SelfCorrectiveLlama
 
 # --- Helper Functions ---
 
+
 def hf_login():
     """Logs in to Hugging Face Hub using an environment variable token."""
     token = os.getenv("HUGGINGFACE_TOKEN")
     if token is None:
         logger.error("HUGGINGFACE_TOKEN environment variable not set.")
         sys.exit("Please set the HUGGINGFACE_TOKEN environment variable.")
-    
+
     logger.info("Logging in to Hugging Face Hub...")
     login(token=token)
     logger.info("Successfully logged in to Hugging Face Hub.")
+
 
 def create_model_card(repo_id: str, base_model: str) -> str:
     """Generates a professional README.md model card."""
     # NOTE: It is your responsibility to use the correct license identifier for the base model.
     # For example, for Llama 3 8B Instruct, it is "meta-llama/llama-3-8b-instruct-license".
     # See the original model card on the Hub for the correct value.
-    license_identifier = "llama3.1" # <-- ADJUST AS NEEDED
+    license_identifier = "llama3.1"  # <-- ADJUST AS NEEDED
 
     return f"""---
 license: {license_identifier}
@@ -101,14 +103,15 @@ This model was programmatically converted and uploaded using a deployment script
 The code in `modeling.py` is licensed under the Apache 2.0 License. The model weights are subject to the original license of the base model.
 """
 
+
 def build_and_push(config_path: str):
     """Main function to run the model conversion and deployment pipeline."""
-    
+
     # 1. Load and Validate Configuration
     logger.info(f"Loading configuration from {config_path}")
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         config = json.load(f)
-        
+
     base_model_name = config["base_model_name"]
     hf_repo_id = config["hf_repo_id"]
     local_output_dir = config["local_output_dir"]
@@ -127,9 +130,7 @@ def build_and_push(config_path: str):
     logger.info("Loading base tokenizer and model...")
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
     base_model = AutoModelForCausalLM.from_pretrained(
-        base_model_name,
-        torch_dtype="auto",
-        device_map="auto"
+        base_model_name, torch_dtype="auto", device_map="auto"
     )
 
     logger.info("Creating instance of the custom SelfCorrectiveLlama model...")
@@ -142,17 +143,21 @@ def build_and_push(config_path: str):
     custom_model = custom_model.to(base_model.dtype)
 
     logger.info("Loading state dict from base model into custom model...")
-    incompatible_keys = custom_model.load_state_dict(base_model.state_dict(), strict=False)
+    incompatible_keys = custom_model.load_state_dict(
+        base_model.state_dict(), strict=False
+    )
     logger.info(f"State dict loaded. Mismatched keys (expected): {incompatible_keys}")
-    
+
     # Explicitly free up memory by deleting the base model
     logger.info("Base model state copied. Deleting base model to free up memory...")
     del base_model
     gc.collect()
-    
+
     # 4. Prepare Local Directory for Deployment
     if os.path.exists(local_output_dir):
-        logger.warning(f"Output directory {local_output_dir} already exists. It will be overwritten.")
+        logger.warning(
+            f"Output directory {local_output_dir} already exists. It will be overwritten."
+        )
         shutil.rmtree(local_output_dir)
     os.makedirs(local_output_dir)
 
@@ -172,7 +177,7 @@ def build_and_push(config_path: str):
     # 6. Deploy to Hugging Face Hub
     logger.info(f"Deploying model to Hugging Face Hub at repository: {hf_repo_id}")
     api = HfApi()
-    
+
     logger.info("Creating rxepository on the Hub (if it doesn't exist)...")
     api.create_repo(repo_id=hf_repo_id, repo_type="model", exist_ok=True)
 
@@ -181,7 +186,7 @@ def build_and_push(config_path: str):
         folder_path=local_output_dir,
         repo_id=hf_repo_id,
         repo_type="model",
-        commit_message="Initial model conversion and upload."
+        commit_message="Initial model conversion and upload.",
     )
 
     logger.info("Upload to Hugging Face Hub complete.")
@@ -199,12 +204,14 @@ def build_and_push(config_path: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Build and deploy a custom Llama model to the Hugging Face Hub.")
+    parser = argparse.ArgumentParser(
+        description="Build and deploy a custom Llama model to the Hugging Face Hub."
+    )
     parser.add_argument(
         "--config",
         type=str,
         default="configs/build_and_push_config.json",
-        help="Path to the deployment configuration JSON file."
+        help="Path to the deployment configuration JSON file.",
     )
     args = parser.parse_args()
     build_and_push(args.config)

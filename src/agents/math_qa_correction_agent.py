@@ -8,32 +8,37 @@ from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
 
 from src.models import ErrorList, MathQACorrectionState
 from src.prompts.gemini_agent_prompts import (
-    MathQAErrorCheckPrompt, 
-    MathQAErrorCorrectionPrompt, 
+    MathQAErrorCheckPrompt,
+    MathQAErrorCorrectionPrompt,
     MathQAResponseVerificationPrompt,
     MathQAEvalErrorCheckPrompt,
 )
 from src.utils.formatting import ensure_space_after_del_tokens, apply_del_tokens
 
+
 class MathQACorrectionAgent:
     def __init__(
-            self, 
-            error_check_model_name: str = "gemini-2.0-flash", 
-            correction_model_name: str = "gemini-2.0-flash", 
-            error_check_temperature: float = 0.2, 
-            correction_temperature: float = 0.3, 
-            error_detection_only: bool = False,
-            apply_deletion_tags: bool = False,
-            max_responses_to_correct: int = 3,
+        self,
+        error_check_model_name: str = "gemini-2.0-flash",
+        correction_model_name: str = "gemini-2.0-flash",
+        error_check_temperature: float = 0.2,
+        correction_temperature: float = 0.3,
+        error_detection_only: bool = False,
+        apply_deletion_tags: bool = False,
+        max_responses_to_correct: int = 3,
     ):
-        self.error_check_llm = ChatGoogleGenerativeAI(model=error_check_model_name, temperature=error_check_temperature)
-        self.correction_llm = ChatGoogleGenerativeAI(model=correction_model_name, temperature=correction_temperature)
+        self.error_check_llm = ChatGoogleGenerativeAI(
+            model=error_check_model_name, temperature=error_check_temperature
+        )
+        self.correction_llm = ChatGoogleGenerativeAI(
+            model=correction_model_name, temperature=correction_temperature
+        )
         self.error_detection_only = error_detection_only
         self.apply_deletion_tags = apply_deletion_tags
         self.max_responses_to_correct = max_responses_to_correct
 
         self.model = self._build_graph().compile()
-    
+
     def _build_graph(self) -> StateGraph:
         graph = StateGraph(MathQACorrectionState)
 
@@ -49,9 +54,12 @@ class MathQACorrectionAgent:
         graph.add_edge("verify_corrected_response", "filter_verified_responses")
         graph.add_edge("filter_verified_responses", END)
 
-        graph.add_conditional_edges("check_for_errors", self.should_correct, {True: "get_errors_to_correct", False: END})
+        graph.add_conditional_edges(
+            "check_for_errors",
+            self.should_correct,
+            {True: "get_errors_to_correct", False: END},
+        )
         return graph
-
 
     def _batch_with_retry(self, chain, prompts):
         results = [None] * len(prompts)
@@ -61,33 +69,39 @@ class MathQACorrectionAgent:
 
         while indexed_prompts_to_process:
             indices, prompts_to_run = zip(*indexed_prompts_to_process)
-            
+
             batch_results = chain.batch(prompts_to_run, return_exceptions=True)
-            
             failed_prompts_for_next_retry = []
 
             for i, res in enumerate(batch_results):
                 original_index = indices[i]
                 if isinstance(res, Exception):
                     if isinstance(res, ResourceExhausted):
-                        logger.warning(f"Rate limit exceeded for a prompt. Will retry. Error: {res}")
-                        failed_prompts_for_next_retry.append((original_index, prompts[original_index]))
+                        logger.warning(
+                            f"Rate limit exceeded for a prompt. Will retry. Error: {res}"
+                        )
+                        failed_prompts_for_next_retry.append(
+                            (original_index, prompts[original_index])
+                        )
                     else:
-                        # logger.error(f"An unexpected error occurred for a prompt and it will not be retried: {res}")
+                        logger.error(
+                            f"An unexpected error occurred for a prompt and it will not be retried: {res}"
+                        )
                         results[original_index] = res
                 else:
                     results[original_index] = res
-            
+
             if failed_prompts_for_next_retry:
-                logger.info(f"{len(failed_prompts_for_next_retry)} requests failed due to rate limits. Retrying in {wait_time} seconds...")
+                logger.info(
+                    f"{len(failed_prompts_for_next_retry)} requests failed due to rate limits. Retrying in {wait_time} seconds..."
+                )
                 time.sleep(wait_time)
                 indexed_prompts_to_process = failed_prompts_for_next_retry
             else:
                 indexed_prompts_to_process = []
-                
+
         return results
 
-    
     def check_for_errors(self, state: MathQACorrectionState) -> MathQACorrectionState:
         question = state["question"]
         answer = state["answer"]
@@ -96,31 +110,45 @@ class MathQACorrectionAgent:
         self.error_number = 0
 
         parser = PydanticOutputParser(pydantic_object=ErrorList)
-        prompt = MathQAEvalErrorCheckPrompt(input_variables=[
-            "question", "answer", "is_answerable", 
-            "response", "format_instructions",
-        ])
+        if self.error_detection_only:
+            prompt = MathQAEvalErrorCheckPrompt(
+                input_variables=[
+                    "question",
+                    "answer",
+                    "is_answerable",
+                    "response",
+                    "format_instructions",
+                ]
+            )
+        else:
+            prompt = MathQAErrorCheckPrompt(
+                input_variables=[
+                    "question",
+                    "answer",
+                    "is_answerable",
+                    "response",
+                    "format_instructions",
+                ]
+            )
 
         if self.apply_deletion_tags:
-            # print("Before applying deletion tags:", "\n---\n".join(response_batch))
             response_batch = [apply_del_tokens(res) for res in response_batch]
-            # print("\n\nAfter applying deletion tags:", "\n---\n".join(response_batch))
 
         # batch inputs
         prompts = [
             prompt.format(
-                question=question, 
-                answer=answer, 
+                question=question,
+                answer=answer,
                 is_answerable=is_answerable,
-                response=res, 
-                format_instructions=parser.get_format_instructions(), 
+                response=res,
+                format_instructions=parser.get_format_instructions(),
             )
             for res in response_batch
         ]
-  
+
         chain = self.error_check_llm | parser
         result = self._batch_with_retry(chain, prompts)
-        
+
         errors = []
         wrong_response_number = 0
         responses = []
@@ -131,26 +159,26 @@ class MathQACorrectionAgent:
                 responses.append(response_batch[i])
                 wrong_response_number += 1 if result[i].errors else 0
 
-        # logger.info(f"Errors: {errors}")
-        # logger.info(f"Wrong responses: {wrong_response_number}")
-
         state["errors"] = errors
         state["wrong_response_number"] = wrong_response_number
         state["responses"] = responses
         return state
-    
+
     def should_correct(self, state: MathQACorrectionState) -> bool:
         if self.error_detection_only:
             return False
 
-        # return bool(self.error_number) and self.error_number < len(errors)
         return bool(state["wrong_response_number"])
-    
-    def get_errors_to_correct(self, state: MathQACorrectionState) -> MathQACorrectionState:
+
+    def get_errors_to_correct(
+        self, state: MathQACorrectionState
+    ) -> MathQACorrectionState:
         errors = state["errors"]
         wrong_response_number = state["wrong_response_number"]
         responses = state["responses"]
-        num_responses_to_correct = min(wrong_response_number, self.max_responses_to_correct)
+        num_responses_to_correct = min(
+            wrong_response_number, self.max_responses_to_correct
+        )
 
         zipped_lists = zip(errors, responses)
         sorted_pairs = sorted(zipped_lists, key=lambda pair: len(pair[0]), reverse=True)
@@ -160,11 +188,8 @@ class MathQACorrectionAgent:
         state["errors_to_correct"] = errors
         state["responses_to_correct"] = responses
 
-        # logger.info(f"Errors to correct: {errors}")
-        # logger.info(f"Responses to correct: {responses}")
-
         return state
-    
+
     def correct_response(self, state: MathQACorrectionState) -> MathQACorrectionState:
         question = state["question"]
         answer = state["answer"]
@@ -172,67 +197,77 @@ class MathQACorrectionAgent:
         response_batch = state["responses_to_correct"]
         errors = state["errors_to_correct"]
 
-        prompt = MathQAErrorCorrectionPrompt(input_variables=[
-            "question", "answer", "is_answerable", 
-            "response", "errors",
-        ])
+        prompt = MathQAErrorCorrectionPrompt(
+            input_variables=[
+                "question",
+                "answer",
+                "is_answerable",
+                "response",
+                "errors",
+            ]
+        )
         parser = StrOutputParser()
 
         # batch inputs
         prompts = [
             prompt.format(
-                question=question, 
-                answer=answer, 
+                question=question,
+                answer=answer,
                 is_answerable=is_answerable,
-                response=res, 
+                response=res,
                 errors=err,
             )
             for res, err in zip(response_batch, errors)
         ]
-  
+
         chain = self.correction_llm | parser
         corrected_responses = self._batch_with_retry(chain, prompts)
-        
-        # logger.info(f"Corrected responses: {corrected_responses}")
-        
-        state["corrected_responses"] = [ensure_space_after_del_tokens(res) for res in corrected_responses]
+
+        state["corrected_responses"] = [
+            ensure_space_after_del_tokens(res) for res in corrected_responses
+        ]
         return state
-    
-    def verify_corrected_response(self, state: MathQACorrectionState) -> MathQACorrectionState:
+
+    def verify_corrected_response(
+        self, state: MathQACorrectionState
+    ) -> MathQACorrectionState:
         question = state["question"]
         answer = state["answer"]
         is_answerable = state["is_answerable"]
         corrected_responses = state["corrected_responses"]
 
-        prompt = MathQAResponseVerificationPrompt(input_variables=[
-            "question", "answer", "is_answerable", "corrected_response"
-        ])
+        prompt = MathQAResponseVerificationPrompt(
+            input_variables=[
+                "question",
+                "answer",
+                "is_answerable",
+                "corrected_response",
+            ]
+        )
 
         # batch inputs
         prompts = [
             prompt.format(
                 question=question,
-                answer=answer, 
+                answer=answer,
                 is_answerable=is_answerable,
-                corrected_response=res
+                corrected_response=res,
             )
             for res in corrected_responses
         ]
-  
+
         chain = self.correction_llm | StrOutputParser()
 
-        # try:
-        #     verified_response_mask = chain.batch(prompts)
-        # except Exception as e:
-        #     logger.error(f"Error in MathQACorrectionAgent: {e}")
         verified_response_mask = self._batch_with_retry(chain, prompts)
+        state["verified_response_mask"] = [
+            "true" in response.lower() for response in verified_response_mask
+        ]
 
-        # logger.info(f"Verified responses: {verified_response_mask}")
-
-        state["verified_response_mask"] = ['true' in response.lower() for response in verified_response_mask]
         return state
 
-    def filter_verified_responses(self, state: MathQACorrectionState) -> MathQACorrectionState:
+    def filter_verified_responses(
+        self, state: MathQACorrectionState
+    ) -> MathQACorrectionState:
         """Filters responses and errors, keeping only those marked as verified."""
         responses = state["corrected_responses"]
         mask = state["verified_response_mask"]

@@ -83,7 +83,6 @@ Icon
 
 # --- Data Files ---
 /dataset/*.json
-/dataset/raw_model_responses/**/*.json
-/dataset/processed_data/**/*.json
-/dataset/t*
+/dataset/raw_model_responses/train/*.json
+/dataset/processed_data/train/*.json
 /dataset/s*

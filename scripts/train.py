@@ -4,7 +4,6 @@ import argparse
 import os
 import json
 import torch
-import shutil
 import gc
 from transformers import (
     AutoTokenizer,
@@ -13,17 +12,24 @@ from transformers import (
     BitsAndBytesConfig,
     AutoConfig,
 )
-from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training, PeftModel
+from peft import (
+    get_peft_model,
+    LoraConfig,
+    TaskType,
+    prepare_model_for_kbit_training,
+    PeftModel,
+)
 import datasets
 from transformers.trainer_utils import get_last_checkpoint
 import wandb
 
 from src.trainer import SelfCorrectionTrainer, SelfCorrectionDataCollator
 
+
 # --- Main Training Function ---
 def main():
     # --- Force Device Placement for PytorchDDP ---
-    # Manually set the device for each process based on the 
+    # Manually set the device for each process based on the
     # LOCAL_RANK environment variable provided by torchrun.
     # This overrides the faulty default behavior where all processes
     # were piling onto GPU 0.
@@ -32,36 +38,78 @@ def main():
         if torch.cuda.is_available():
             torch.cuda.set_device(local_rank)
     else:
-        local_rank = 0 # Default to 0 if not in a distributed environment
-            
+        local_rank = 0  # Default to 0 if not in a distributed environment
+
     # 1. Parse Arguments
-    parser = argparse.ArgumentParser(description="Two-stage training script for the Self-Corrective LLaMA model.")
+    parser = argparse.ArgumentParser(
+        description="Two-stage training script for the Self-Corrective LLaMA model."
+    )
 
     # --- SageMaker-specific arguments ---
-     # The directory where the final model artifacts should be saved.
+    # The directory where the final model artifacts should be saved.
     parser.add_argument("--model_dir", type=str, default=os.environ.get("SM_MODEL_DIR"))
     # The directory for other outputs like logs.
-    parser.add_argument("--output_data_dir", type=str, default=os.environ.get("SM_OUTPUT_DATA_DIR"))
+    parser.add_argument(
+        "--output_data_dir", type=str, default=os.environ.get("SM_OUTPUT_DATA_DIR")
+    )
     # Input channels for data.
-    parser.add_argument("--dataset_path", type=str, default=os.environ.get("SM_CHANNEL_DATASET"))
+    parser.add_argument(
+        "--dataset_path", type=str, default=os.environ.get("SM_CHANNEL_DATASET")
+    )
     # A dedicated input channel for the base model.
-    parser.add_argument("--base_model_path", type=str, default="/opt/ml/input/data/model")
+    parser.add_argument(
+        "--base_model_path", type=str, default="/opt/ml/input/data/model"
+    )
 
     # --- Stage 1 Hyperparameters (Detector Training) ---
-    parser.add_argument("--epochs_s1", type=float, default=1, help="Number of epochs for Stage 1.")
-    parser.add_argument("--learning_rate_s1", type=float, default=2e-4, help="Learning rate for Stage 1.")
-    
+    parser.add_argument(
+        "--epochs_s1", type=float, default=1, help="Number of epochs for Stage 1."
+    )
+    parser.add_argument(
+        "--learning_rate_s1",
+        type=float,
+        default=2e-4,
+        help="Learning rate for Stage 1.",
+    )
+
     # --- Stage 2 Hyperparameters (Joint Training) ---
-    parser.add_argument("--epochs_s2", type=float, default=2, help="Number of epochs for Stage 2.")
-    parser.add_argument("--learning_rate_s2", type=float, default=2e-5, help="Learning rate for Stage 2.")
-    parser.add_argument("--alpha_s2", type=float, default=0.3, help="Alpha for Stage 2 (balances token and hallucination loss).")
+    parser.add_argument(
+        "--epochs_s2", type=float, default=2, help="Number of epochs for Stage 2."
+    )
+    parser.add_argument(
+        "--learning_rate_s2",
+        type=float,
+        default=2e-5,
+        help="Learning rate for Stage 2.",
+    )
+    parser.add_argument(
+        "--alpha_s2",
+        type=float,
+        default=0.3,
+        help="Alpha for Stage 2 (balances token and hallucination loss).",
+    )
 
     # --- Shared Hyperparameters ---
     parser.add_argument("--train_batch_size", type=int, default=2)
     parser.add_argument("--eval_batch_size", type=int, default=2)
-    parser.add_argument("--correction_weights", type=str, default='[1.0, 10.0, 6.0]', help='JSON string for a 3-element list for [no-op, del-s, del-a] weights.')
-    parser.add_argument("--gradient_accumulation_steps_s1", type=int, default=8, help="Gradient accumulation steps for Stage 1.")
-    parser.add_argument("--gradient_accumulation_steps_s2", type=int, default=4, help="Gradient accumulation steps for Stage 2.")
+    parser.add_argument(
+        "--correction_weights",
+        type=str,
+        default="[1.0, 10.0, 6.0]",
+        help="JSON string for a 3-element list for [no-op, del-s, del-a] weights.",
+    )
+    parser.add_argument(
+        "--gradient_accumulation_steps_s1",
+        type=int,
+        default=8,
+        help="Gradient accumulation steps for Stage 1.",
+    )
+    parser.add_argument(
+        "--gradient_accumulation_steps_s2",
+        type=int,
+        default=4,
+        help="Gradient accumulation steps for Stage 2.",
+    )
     parser.add_argument("--optim", type=str, default="paged_adamw_8bit")
     parser.add_argument("--weight_decay", type=float, default=0.01)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
@@ -78,7 +126,7 @@ def main():
 
     args, _ = parser.parse_known_args()
     correction_weights = json.loads(args.correction_weights)
-    
+
     # Define a dedicated directory for the Stage 1 checkpoints
     stage_1_checkpoints_path = os.path.join(args.output_data_dir, "s1_checkpoints")
 
@@ -177,7 +225,7 @@ def main():
         eval_dataset=eval_dataset_s1,
         tokenizer=tokenizer,
         data_collator=SelfCorrectionDataCollator(tokenizer=tokenizer),
-        alpha=0.0, # Alpha=0 trains detector only
+        alpha=0.0,  # Alpha=0 trains detector only
         correction_weights=correction_weights,
     )
 
@@ -215,11 +263,15 @@ def main():
     )
     model_s2_base = prepare_model_for_kbit_training(model_s2_base)
 
-    print(f"--- Loading and applying adapter from Stage 1 checkpoint: {last_checkpoint_s1} ---")
+    print(
+        f"--- Loading and applying adapter from Stage 1 checkpoint: {last_checkpoint_s1} ---"
+    )
     # Load the PEFT model from the Stage 1 checkpoint and crucially, make it trainable.
-    model_s2 = PeftModel.from_pretrained(model_s2_base, last_checkpoint_s1, is_trainable=True)
+    model_s2 = PeftModel.from_pretrained(
+        model_s2_base, last_checkpoint_s1, is_trainable=True
+    )
     model_s2.print_trainable_parameters()
-    
+
     print("--- Loading Stage 2 dataset ---")
     dataset_s2_path = os.path.join(args.dataset_path, "training_data_stage_2")
     print(f"Loading dataset from: {dataset_s2_path}")
@@ -227,7 +279,7 @@ def main():
     train_dataset_s2, eval_dataset_s2 = dataset_s2["train"], dataset_s2["test"]
 
     training_args_s2 = TrainingArguments(
-        output_dir=args.model_dir, # Stage 2 saves to the main model directory
+        output_dir=args.model_dir,  # Stage 2 saves to the main model directory
         num_train_epochs=args.epochs_s2,
         learning_rate=args.learning_rate_s2,
         per_device_train_batch_size=args.train_batch_size,
@@ -259,15 +311,16 @@ def main():
         eval_dataset=eval_dataset_s2,
         tokenizer=tokenizer,
         data_collator=SelfCorrectionDataCollator(tokenizer=tokenizer),
-        alpha=args.alpha_s2, # Alpha > 0 trains both LoRA and detector
+        alpha=args.alpha_s2,  # Alpha > 0 trains both LoRA and detector
         correction_weights=correction_weights,
     )
 
     print("--- Starting Stage 2 Training ---")
     trainer_s2.train()
-    
+
     print("--- Two-stage training finished. Saving final model. ---")
     trainer_s2.save_model(args.model_dir)
+
 
 if __name__ == "__main__":
     main()
